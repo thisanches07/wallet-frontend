@@ -1,6 +1,10 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "../hooks/useAuth";
+import { AuthButton } from "@/components/login/AuthButton";
+import { AuthInput } from "@/components/login/AuthInput";
+import { ErrorMessage } from "@/components/login/ErrorMessage";
+import { GoogleLoginButton } from "@/components/login/GoogleLoginButton";
 import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
+import { useAuth } from "../hooks/useAuth";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -10,98 +14,76 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user) {
-      router.push("/dashboard");
-    }
+    if (!loading && user) router.push("/dashboard");
   }, [loading, user, router]);
 
-  const handleLogin = async () => {
+  const handleAction = async (action: "login" | "signup" | "google") => {
     try {
       setError(null);
-      await login(email, password);
+      if (action === "login") await login(email, password);
+      if (action === "signup") await signup(email, password);
+      if (action === "google") await googleLogin();
       router.push("/dashboard");
     } catch (err: any) {
-      const firebaseCode = err?.code || err?.message || "";
-      setError(getFriendlyFirebaseError(firebaseCode));
+      const code = err?.code || err?.message || "";
+      setError(getFriendlyFirebaseError(code));
     }
   };
-
-  const handleSignup = async () => {
-    try {
-      setError(null);
-      await signup(email, password);
-      router.push("/dashboard");
-    } catch (err: any) {
-      const firebaseCode = err?.code || err?.message || "";
-      setError(getFriendlyFirebaseError(firebaseCode));
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    try {
-      setError(null);
-      await googleLogin();
-      router.push("/dashboard");
-    } catch (err: any) {
-      const firebaseCode = err?.code || err?.message || "";
-      setError(getFriendlyFirebaseError(firebaseCode));
-    }
-  };
-
-  function getFriendlyFirebaseError(errorCode: string): string {
-    const map: Record<string, string> = {
-      "auth/invalid-email": "E-mail inválido.",
-      "auth/user-not-found": "Usuário não encontrado.",
-      "auth/wrong-password": "Credenciais inválidas.",
-      "auth/email-already-in-use": "Este e-mail já está em uso.",
-      "auth/weak-password": "A senha deve ter no mínimo 6 caracteres.",
-      "auth/invalid-credential": "Credenciais inválidas.",
-      "auth/popup-closed-by-user": "Login com o Google foi cancelado.",
-    };
-
-    return map[errorCode] || "Erro desconhecido. Tente novamente.";
-  }
 
   return (
-    <main className="login-page">
-      <div className="login-box">
-        <h1 className="login-title">Carteira IA</h1>
+    <main className="min-h-screen flex items-center justify-center bg-gray-100 text-gray-800">
+      <div className="w-full max-w-sm bg-white border border-gray-300 p-8 rounded-2xl shadow-lg space-y-4">
+        <h1 className="text-2xl font-bold text-center text-blue-600 mb-4">
+          Carteira IA
+        </h1>
 
-        <input
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="login-input"
-        />
-
-        <input
-          placeholder="Senha"
+        <AuthInput placeholder="Email" value={email} onChange={setEmail} />
+        <AuthInput
           type="password"
+          placeholder="Senha"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="login-input"
+          onChange={setPassword}
         />
 
-        <button onClick={handleLogin} className="btn btn-primary">
+        <AuthButton
+          onClick={() => handleAction("login")}
+          className="btn-primary"
+        >
           Entrar
-        </button>
-
-        <button onClick={handleSignup} className="btn btn-secondary">
+        </AuthButton>
+        <AuthButton
+          onClick={() => handleAction("signup")}
+          className="bg-gray-300 text-gray-800 hover:bg-gray-400"
+        >
           Cadastrar
-        </button>
+        </AuthButton>
+        <GoogleLoginButton onClick={() => handleAction("google")} />
 
-        <button onClick={handleGoogleLogin} className="btn btn-google">
-          <img
-            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-            alt="Google"
-            width={20}
-          />
-          Entrar com Google
-        </button>
-
-        {error && <p className="login-error">{error}</p>}
+        {error && <ErrorMessage message={error} />}
         {loading && <p className="login-loading">Carregando...</p>}
+        {process.env.NODE_ENV === "development" && (
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="text-sm underline text-gray-400 mt-4"
+          >
+            Pular login (dev)
+          </button>
+        )}
       </div>
     </main>
   );
+}
+
+function getFriendlyFirebaseError(errorCode: string): string {
+  const map: Record<string, string> = {
+    "auth/invalid-email": "E-mail inválido.",
+    "auth/user-not-found": "Usuário não encontrado.",
+    "auth/wrong-password": "Credenciais inválidas.",
+    "auth/email-already-in-use": "Este e-mail já está em uso.",
+    "auth/weak-password": "A senha deve ter no mínimo 6 caracteres.",
+    "auth/invalid-credential": "Credenciais inválidas.",
+    "auth/popup-closed-by-user": "Login com o Google foi cancelado.",
+  };
+
+  return map[errorCode] || "Erro desconhecido. Tente novamente.";
 }

@@ -1,15 +1,15 @@
 // src/lib/firebase.ts
-import { initializeApp, getApps, getApp } from "firebase/app";
+import { getApp, getApps, initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBz7k52x2yNrq3pwJ9uT-nNCR4mRYO_hmQ",
-  authDomain: "carteira-ia-63b85.firebaseapp.com",
-  projectId: "carteira-ia-63b85",
-  storageBucket: "carteira-ia-63b85.appspot.com",
-  messagingSenderId: "481329153553",
-  appId: "1:481329153553:web:2a17372ea519672bf113b0",
-  measurementId: "G-RNTZLNPMK7",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.PROJECT_ID,
+  storageBucket: process.env.STORAGE_BUCKET,
+  messagingSenderId: process.env.MESSAGING_SENDER_ID,
+  appId: process.env.APP_ID,
+  measurementId: process.env.MEASUREMENT_ID,
 };
 
 // ✅ só inicializa se ainda não estiver inicializado
