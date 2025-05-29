@@ -1,33 +1,34 @@
+import { SummaryCards } from "@/components/dashboard/cards/SummaryCards";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { ExpensesBarChart } from "@/components/dashboard/ExpensesBarChart";
 import { ExpensesComparison } from "@/components/dashboard/ExpensesComparison";
 import { MonthSidebar } from "@/components/dashboard/MonthSidebar";
-import { SummaryIndicators } from "@/components/dashboard/SummaryIndicators";
 import { Topbar } from "@/components/Topbar";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardData } from "@/types/dashboard";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
-const mockData: DashboardData = {
-  income: 5000,
-  expenses: 4200,
-  invested: 400,
-  categories: [
-    { name: "Essenciais", value: 65 },
-    { name: "Lazer", value: 20 },
-    { name: "Investimentos", value: 15 },
-  ],
-  recentTransactions: [
-    { date: "2025-05-25", type: "Renda", value: 4800, category: "Salário" },
-    { date: "2025-05-26", type: "Despesa", value: 1200, category: "Aluguel" },
-  ],
-};
-
 export default function DashboardPage() {
+  const mockData: DashboardData = {
+    income: 5000,
+    expenses: 4200,
+    invested: 400,
+    categories: [
+      { name: "Essenciais", value: 65 },
+      { name: "Lazer", value: 20 },
+      { name: "Investimentos", value: 15 },
+    ],
+    recentTransactions: [
+      { date: "2025-05-25", type: "Renda", value: 4800, category: "Salário" },
+      { date: "2025-05-26", type: "Despesa", value: 1200, category: "Aluguel" },
+    ],
+  };
+
   const { user, loading } = useAuth();
   const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
+
   const monthAbbr = [
     "Jan",
     "Feb",
@@ -42,8 +43,9 @@ export default function DashboardPage() {
     "Nov",
     "Dec",
   ];
-  const currentMonth = monthAbbr[new Date().getMonth()];
-  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [selectedMonth, setSelectedMonth] = useState<number>(
+    new Date().getMonth()
+  );
 
   useEffect(() => {
     if (!loading) {
@@ -66,8 +68,8 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] flex-1">
         <MonthSidebar selected={selectedMonth} onSelect={setSelectedMonth} />
         <main className="p-6 space-y-6">
-          <DashboardHeader selectedMonth={selectedMonth} />
-          <SummaryIndicators data={data} />
+          <DashboardHeader selectedMonth={monthAbbr[selectedMonth]} />
+          <SummaryCards data={data} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ExpensesBarChart />
             <ExpensesComparison />

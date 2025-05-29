@@ -3,8 +3,12 @@
 @tailwind utilities;
 
 :root {
-  --background: #f5f5f7;
-  --foreground: #1a1a1a;
+  --color-bg-dark: #1a1a1d;
+  --color-text: #e5e7eb;
+  --color-indicado: #3b82f6; /* azul */
+  --color-gasto: #fbbf24; /* amarelo */
+  --color-alerta: #f43f5e; /* rosa/vermelho */
+  --color-economia: #34d399; /* verde */
 }
 
 /* @media (prefers-color-scheme: dark) {
@@ -14,8 +18,20 @@
   }
 } */
 
+html,
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+}
+
+html,
+body,
+div,
+section,
+main,
+aside {
+  user-select: none;
+  cursor: default;
 }

@@ -3,7 +3,7 @@ import { ExpensesCard } from "@/components/dashboard/cards/ExpensesCard";
 import { ReceipesCard } from "@/components/dashboard/cards/ReceipesCard";
 import { DashboardData } from "@/types/dashboard";
 
-export function SummaryIndicators({ data }: { data: DashboardData }) {
+export function SummaryCards({ data }: { data: DashboardData }) {
   const saldo = data.income - data.expenses - data.invested;
   const total = data.income + data.invested - data.expenses;
 
@@ -16,7 +16,7 @@ export function SummaryIndicators({ data }: { data: DashboardData }) {
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-stretch">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full items-stretch">
       <BalanceCard data={data} />
       <ReceipesCard data={data} />
       <ExpensesCard data={data} />
