@@ -1,4 +1,5 @@
 // MonthlyExpenses.tsx
+import { AddExpenseModal } from "@/components/dashboard/AddExpenseModal";
 import { useState } from "react";
 
 type Expense = {
@@ -99,6 +100,15 @@ export function MonthlyExpenses() {
           </li>
         ))}
       </ul>
+      {showModal && (
+        <AddExpenseModal
+          onClose={() => setShowModal(false)}
+          onAdd={(expense) => {
+            setExpenses((prev) => [...prev, expense]);
+            setShowModal(false);
+          }}
+        />
+      )}
     </div>
   );
 }
