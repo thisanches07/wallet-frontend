@@ -2,6 +2,7 @@ import { SummaryCards } from "@/components/dashboard/cards/SummaryCards";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { ExpensesBarChart } from "@/components/dashboard/ExpensesBarChart";
 import { ExpensesComparison } from "@/components/dashboard/ExpensesComparison";
+import { MonthlyExpenses } from "@/components/dashboard/MonthlyExpenses";
 import { MonthSidebar } from "@/components/dashboard/MonthSidebar";
 import { Topbar } from "@/components/Topbar";
 import { useAuth } from "@/hooks/useAuth";
@@ -65,14 +66,25 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Topbar />
+
       <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] flex-1">
         <MonthSidebar selected={selectedMonth} onSelect={setSelectedMonth} />
-        <main className="p-6 space-y-6">
+
+        <main className="p-6 h-[calc(100vh-64px)] overflow-hidden">
           <DashboardHeader selectedMonth={monthAbbr[selectedMonth]} />
-          <SummaryCards data={data} />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ExpensesBarChart />
-            <ExpensesComparison />
+
+          <div className="flex flex-col lg:flex-row gap-6 mt-6 h-full">
+            <div className="flex-1 space-y-6 overflow-y-auto pr-2">
+              <SummaryCards data={data} />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <ExpensesBarChart />
+                <ExpensesComparison />
+              </div>
+            </div>
+
+            <div className="w-full lg:w-[320px] h-full overflow-y-auto">
+              <MonthlyExpenses />
+            </div>
           </div>
         </main>
       </div>
