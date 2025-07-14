@@ -1,32 +1,25 @@
-import { MiniSparkline } from "@/components/dashboard/cards/charts/MiniSparkline";
-import { StatusBadge } from "@/components/dashboard/cards/StatusBadge";
-import { Pencil } from "lucide-react";
+import { Pencil, TrendingDown, TrendingUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-export function ReceipesCard() {
+export default function ReceipesCard() {
   const [isEditing, setIsEditing] = useState(false);
-  const [receitaAtual, setReceitaAtual] = useState(0);
+  const [receitas, setReceitas] = useState(0);
   const [inputValue, setInputValue] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const receitaPrevista = 1500;
-  const receitaMesAnterior = 1200;
-  const diffMesAnterior = receitaAtual - receitaMesAnterior;
-  const atingiuMeta = receitaAtual >= receitaPrevista;
-  const progresso = Math.min((receitaAtual / receitaPrevista) * 100, 100);
-
-  const historicoReceita = [
-    { mes: "Mar", saldo: 1000 },
-    { mes: "Abr", saldo: 1200 },
-    { mes: "Mai", saldo: receitaAtual },
-  ];
+  // Simulação de comparação mensal
+  const previousReceitas = 4500; // Mock do mês anterior
+  const change = receitas - previousReceitas;
+  const changePercentage =
+    previousReceitas > 0 ? (change / previousReceitas) * 100 : 0;
+  const isGrowing = change > 0;
 
   useEffect(() => {
-    const saved = localStorage.getItem("receipesTotal");
+    const saved = localStorage.getItem("receitasTotal");
     if (saved) {
       const parsed = parseFloat(saved);
       if (!isNaN(parsed)) {
-        setReceitaAtual(parsed);
+        setReceitas(parsed);
         setInputValue(parsed);
       }
     }
@@ -40,22 +33,24 @@ export function ReceipesCard() {
   }, [isEditing]);
 
   const saveChanges = () => {
-    localStorage.setItem("receipesTotal", inputValue.toString());
-    setReceitaAtual(inputValue);
+    localStorage.setItem("receitasTotal", inputValue.toString());
+    setReceitas(inputValue);
     setIsEditing(false);
   };
 
   return (
-    <div className="relative bg-gray-100 border border-gray-300 px-5 py-4 rounded-xl shadow w-full h-full flex flex-col justify-between">
-      {/* Header */}
-      <div className="flex justify-between items-start mb-4">
-        <div className="w-full pr-4">
-          <p className="text-base font-semibold text-gray-800 mb-1">
-            Total de receitas
-          </p>
+    <div className="bg-white border border-neutral-200/80 p-6 rounded-2xl shadow-sm transition-all duration-300 group">
+      <div className="flex items-center gap-4">
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-success shadow-sm">
+          <TrendingUp className="w-6 h-6 text-white" />
+        </div>
 
-          {/* Valor com edição inline */}
-          <div className="flex items-center gap-2 mb-2">
+        <div className="flex-1">
+          <h3 className="text-sm font-medium text-neutral-500 mb-1">
+            Receitas
+          </h3>
+
+          <div className="flex items-center gap-2">
             {isEditing ? (
               <input
                 ref={inputRef}
@@ -66,64 +61,47 @@ export function ReceipesCard() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") saveChanges();
                 }}
-                className="text-2xl font-bold text-gray-900 border border-gray-300 rounded px-2 py-1 w-32"
+                className="text-2xl font-bold text-neutral-900 border-2 border-primary-300 rounded-lg px-2 py-1 w-40 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-all"
               />
             ) : (
               <>
-                <p className="text-2xl font-bold text-gray-900">
-                  R$ {receitaAtual.toFixed(2)}
+                <p className="text-2xl font-bold text-success-600 tracking-tight">
+                  R${" "}
+                  {receitas.toLocaleString("pt-BR", {
+                    minimumFractionDigits: 2,
+                  })}
                 </p>
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="text-gray-500 hover:text-gray-700 transition"
-                  aria-label="Editar receita"
+                  className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-primary-600 transition-all duration-200 p-1 hover:bg-primary-50 rounded-md"
+                  aria-label="Editar receitas"
                 >
-                  <Pencil size={18} />
+                  <Pencil size={14} />
                 </button>
               </>
             )}
           </div>
 
-          {/* Status da meta */}
-          <StatusBadge
-            color={atingiuMeta ? "green" : "yellow"}
-            text={
-              atingiuMeta
-                ? "Meta de receita atingida"
-                : `Faltam R$ ${(receitaPrevista - receitaAtual).toFixed(
-                    2
-                  )} para sua meta`
-            }
-          />
+          <p className="text-xs text-neutral-400 mt-1">Este mês</p>
 
-          {/* Sparkline */}
-          <div className="w-full mt-3 mb-1">
-            <MiniSparkline data={historicoReceita} />
-          </div>
-
-          {/* Barra de progresso */}
-          <div className="w-full h-2 mt-3 bg-gray-200 rounded-full overflow-hidden">
+          {/* Indicador sutil de tendência */}
+          {Math.abs(changePercentage) > 0.1 && (
             <div
-              className={`h-full transition-all duration-500 ${
-                atingiuMeta ? "bg-green-400" : "bg-yellow-400"
+              className={`flex items-center gap-1 mt-1 ${
+                isGrowing ? "text-success-600" : "text-danger-600"
               }`}
-              style={{ width: `${progresso}%` }}
-            ></div>
-          </div>
-
-          {/* Comparação com mês anterior */}
-          <p className="text-sm text-gray-500 mt-2">
-            {diffMesAnterior >= 0 ? "+" : "-"}R$
-            {Math.abs(diffMesAnterior).toFixed(2)} em relação a abril
-          </p>
-
-          {/* Receita prevista no topo direito */}
-          <div className="absolute top-4 right-5 text-right">
-            <p className="text-xs text-gray-500">Receita prevista</p>
-            <p className="text-sm font-medium text-gray-700">
-              R$ {receitaPrevista.toFixed(2)}
-            </p>
-          </div>
+            >
+              {isGrowing ? (
+                <TrendingUp size={12} />
+              ) : (
+                <TrendingDown size={12} />
+              )}
+              <span className="text-xs font-medium">
+                {isGrowing ? "+" : ""}
+                {Math.abs(changePercentage).toFixed(1)}%
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>

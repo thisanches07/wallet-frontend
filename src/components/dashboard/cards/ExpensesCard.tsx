@@ -1,33 +1,25 @@
-import { CategoryPie } from "@/components/dashboard/cards/charts/CategoryPie";
-import { StatusBadge } from "@/components/dashboard/cards/StatusBadge";
-import { ArrowDownRight, ArrowUpRight, Pencil } from "lucide-react";
+import { TrendingDown, TrendingUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-export function ExpensesCard() {
+export default function ExpensesCard() {
   const [isEditing, setIsEditing] = useState(false);
-  const [despesasAtuais, setDespesasAtuais] = useState(0);
+  const [gastos, setGastos] = useState(0);
   const [inputValue, setInputValue] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const despesasPrevistas = 1500; // MOCK
-  const categorias = [
-    { nome: "Moradia", valor: 1700 },
-    { nome: "Alimentação", valor: 950 },
-    { nome: "Lazer", valor: 600 },
-  ];
-
-  const percentual = Math.min((despesasAtuais / despesasPrevistas) * 100, 100);
-  const ultrapassou = percentual >= 100;
-
-  const despesasMesAnterior = 9200; // MOCK
-  const diffMesAnterior = despesasAtuais - despesasMesAnterior;
+  // Simulação de comparação mensal
+  const previousGastos = 3200; // Mock do mês anterior
+  const change = gastos - previousGastos;
+  const changePercentage =
+    previousGastos > 0 ? (change / previousGastos) * 100 : 0;
+  const isIncreasing = change > 0; // Para gastos, aumento é negativo
 
   useEffect(() => {
-    const saved = localStorage.getItem("expensesTotal");
+    const saved = localStorage.getItem("gastosTotal");
     if (saved) {
       const parsed = parseFloat(saved);
       if (!isNaN(parsed)) {
-        setDespesasAtuais(parsed);
+        setGastos(parsed);
         setInputValue(parsed);
       }
     }
@@ -41,22 +33,22 @@ export function ExpensesCard() {
   }, [isEditing]);
 
   const saveChanges = () => {
-    localStorage.setItem("expensesTotal", inputValue.toString());
-    setDespesasAtuais(inputValue);
+    localStorage.setItem("gastosTotal", inputValue.toString());
+    setGastos(inputValue);
     setIsEditing(false);
   };
 
   return (
-    <div className="relative bg-gray-100 border border-gray-300 px-5 py-4 rounded-xl shadow w-full h-full flex flex-col justify-between">
-      {/* Topo com conteúdo textual e gráfico à direita */}
-      <div className="flex justify-between items-start mb-4">
-        <div className="w-full pr-4">
-          <p className="text-base font-semibold text-gray-800 mb-1">
-            Total de despesas
-          </p>
+    <div className="bg-white border border-neutral-200/80 p-6 rounded-2xl shadow-sm transition-all duration-300 group">
+      <div className="flex items-center gap-4">
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-danger shadow-sm">
+          <TrendingDown className="w-6 h-6 text-white" />
+        </div>
 
-          {/* Valor com edição inline */}
-          <div className="flex items-center gap-2 mb-2">
+        <div className="flex-1">
+          <h3 className="text-sm font-medium text-neutral-500 mb-1">Gastos</h3>
+
+          <div className="flex items-center gap-2">
             {isEditing ? (
               <input
                 ref={inputRef}
@@ -67,74 +59,40 @@ export function ExpensesCard() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") saveChanges();
                 }}
-                className="text-2xl font-bold text-gray-900 border border-gray-300 rounded px-2 py-1 w-32"
+                className="text-2xl font-bold text-neutral-900 border-2 border-primary-300 rounded-lg px-2 py-1 w-40 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-all"
               />
             ) : (
               <>
-                <p className="text-2xl font-bold text-gray-900">
-                  R$ {despesasAtuais.toFixed(2)}
+                <p className="text-2xl font-bold text-danger-600 tracking-tight">
+                  R${" "}
+                  {gastos.toLocaleString("pt-BR", {
+                    minimumFractionDigits: 2,
+                  })}
                 </p>
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="text-gray-500 hover:text-gray-700 transition"
-                  aria-label="Editar despesas"
-                >
-                  <Pencil size={18} />
-                </button>
               </>
             )}
           </div>
 
-          {/* Status */}
-          <StatusBadge
-            color={ultrapassou ? "red" : "yellow"}
-            text={
-              ultrapassou
-                ? "Você ultrapassou o orçamento!"
-                : `${percentual.toFixed(0)}% do orçamento gasto`
-            }
-          />
+          <p className="text-xs text-neutral-400 mt-1">Este mês</p>
 
-          {/* Barra de progresso */}
-          <div className="w-full h-2 mt-3 bg-gray-200 rounded-full overflow-hidden">
+          {/* Indicador sutil de tendência - Para gastos, vermelho = aumento, verde = redução */}
+          {Math.abs(changePercentage) > 0.1 && (
             <div
-              className={`h-full transition-all duration-500 ${
-                ultrapassou ? "bg-red-400" : "bg-yellow-400"
+              className={`flex items-center gap-1 mt-1 ${
+                isIncreasing ? "text-danger-600" : "text-success-600"
               }`}
-              style={{ width: `${percentual}%` }}
-            ></div>
-          </div>
-
-          <p className="text-sm text-gray-500 mt-2 flex items-center gap-1">
-            {diffMesAnterior === 0 ? (
-              "Mesmo valor que abril"
-            ) : diffMesAnterior > 0 ? (
-              <>
-                <ArrowUpRight size={16} className="text-red-500" />
-                R$ {diffMesAnterior.toFixed(2)} a mais que abril
-              </>
-            ) : (
-              <>
-                <ArrowDownRight size={16} className="text-green-500" />
-                R$ {Math.abs(diffMesAnterior).toFixed(2)} a menos que abril
-              </>
-            )}
-          </p>
-
-          {/* Despesas previstas */}
-          <p className="text-sm text-gray-600 mt-3 mb-0.5">
-            Despesas previstas
-          </p>
-          <p className="text-lg font-medium text-gray-800 mb-2">
-            R$ {despesasPrevistas.toFixed(2)}
-          </p>
-        </div>
-
-        {/* Gráfico de pizza */}
-        <div className="flex flex-col items-center justify-start gap-2">
-          <div className="mt-2 flex justify-center items-center overflow-hidden">
-            <CategoryPie data={categorias} />
-          </div>
+            >
+              {isIncreasing ? (
+                <TrendingUp size={12} />
+              ) : (
+                <TrendingDown size={12} />
+              )}
+              <span className="text-xs font-medium">
+                {isIncreasing ? "+" : "-"}
+                {Math.abs(changePercentage).toFixed(1)}%
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>

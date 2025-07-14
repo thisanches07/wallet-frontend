@@ -2,6 +2,7 @@ import { AuthButton } from "@/components/login/AuthButton";
 import { AuthInput } from "@/components/login/AuthInput";
 import { ErrorMessage } from "@/components/login/ErrorMessage";
 import { GoogleLoginButton } from "@/components/login/GoogleLoginButton";
+import { getFriendlyFirebaseError } from "@/context/AuthContext";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
@@ -72,18 +73,4 @@ export default function LoginPage() {
       </div>
     </main>
   );
-}
-
-function getFriendlyFirebaseError(errorCode: string): string {
-  const map: Record<string, string> = {
-    "auth/invalid-email": "E-mail inválido.",
-    "auth/user-not-found": "Usuário não encontrado.",
-    "auth/wrong-password": "Credenciais inválidas.",
-    "auth/email-already-in-use": "Este e-mail já está em uso.",
-    "auth/weak-password": "A senha deve ter no mínimo 6 caracteres.",
-    "auth/invalid-credential": "Credenciais inválidas.",
-    "auth/popup-closed-by-user": "Login com o Google foi cancelado.",
-  };
-
-  return map[errorCode] || "Erro desconhecido. Tente novamente.";
 }

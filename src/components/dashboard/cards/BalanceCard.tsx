@@ -1,27 +1,20 @@
-import { MiniSparkline } from "@/components/dashboard/cards/charts/MiniSparkline";
-import { StatusBadge } from "@/components/dashboard/cards/StatusBadge";
-import { Pencil } from "lucide-react";
+import { TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-export function BalanceCard() {
+export default function BalanceCard() {
   const [isEditing, setIsEditing] = useState(false);
   const [balance, setBalance] = useState(0);
   const [inputValue, setInputValue] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const previousMonthBalance = 100;
-  const difference = balance - previousMonthBalance;
   const isPositive = balance >= 0;
-  const progresso = Math.min(
-    Math.abs((balance / previousMonthBalance) * 100),
-    100
-  );
 
-  const historicoSaldo = [
-    { mes: "Mar", saldo: 150 },
-    { mes: "Abr", saldo: 100 },
-    { mes: "Mai", saldo: balance },
-  ];
+  // Simulação de dados históricos - você pode substituir por dados reais
+  const previousBalance = 2500; // Mock do mês anterior
+  const change = balance - previousBalance;
+  const changePercentage =
+    previousBalance > 0 ? (change / previousBalance) * 100 : 0;
+  const isGrowing = change > 0;
 
   useEffect(() => {
     const saved = localStorage.getItem("balanceTotal");
@@ -48,15 +41,22 @@ export function BalanceCard() {
   };
 
   return (
-    <div className="relative bg-gray-100 border border-gray-300 px-5 py-4 rounded-xl shadow w-full h-full flex flex-col justify-between">
-      {/* Topo com subtítulo, título e gráfico */}
-      <div className="flex justify-between items-start mb-4">
-        <div className="w-full pr-4">
-          <p className="text-base font-semibold text-gray-800 mb-1">
-            Balanço total
-          </p>
+    <div className="bg-white border border-neutral-200/80 p-6 rounded-2xl shadow-sm transition-all duration-300 group">
+      <div className="flex items-center gap-4">
+        <div
+          className={`flex items-center justify-center w-12 h-12 rounded-xl shadow-sm ${
+            isPositive ? "bg-gradient-success" : "bg-gradient-danger"
+          }`}
+        >
+          <Wallet className="w-6 h-6 text-white" />
+        </div>
 
-          <div className="flex items-center gap-2 mb-2">
+        <div className="flex-1">
+          <h3 className="text-sm font-medium text-neutral-500 mb-1">
+            Saldo Total
+          </h3>
+
+          <div className="flex items-center gap-2">
             {isEditing ? (
               <input
                 ref={inputRef}
@@ -67,49 +67,47 @@ export function BalanceCard() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") saveChanges();
                 }}
-                className="text-2xl font-bold text-gray-900 border border-gray-300 rounded px-2 py-1 w-32"
+                className="text-2xl font-bold text-neutral-900 border-2 border-primary-300 rounded-lg px-2 py-1 w-40 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-all"
               />
             ) : (
               <>
-                <p className="text-2xl font-bold text-gray-900">
-                  R$ {balance.toFixed(2)}
-                </p>
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="text-gray-500 hover:text-gray-700 transition"
-                  aria-label="Editar saldo"
+                <p
+                  className={`text-2xl font-bold tracking-tight ${
+                    isPositive ? "text-neutral-900" : "text-danger-600"
+                  }`}
                 >
-                  <Pencil size={18} />
-                </button>
+                  R${" "}
+                  {balance.toLocaleString("pt-BR", {
+                    minimumFractionDigits: 2,
+                  })}
+                </p>
               </>
             )}
           </div>
 
-          <StatusBadge
-            color={isPositive ? "green" : "red"}
-            text={isPositive ? "Você está positivo" : "Atenção: saldo negativo"}
-          />
+          {!isPositive && (
+            <p className="text-xs text-danger-600 font-medium mt-1">
+              Atenção: Saldo negativo
+            </p>
+          )}
 
-          {/* Sparkline */}
-          <div className="w-full mt-3 mb-1">
-            <MiniSparkline data={historicoSaldo} />
-          </div>
-
-          {/* Barra de progresso */}
-          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+          {/* Indicador sutil de tendência */}
+          {Math.abs(changePercentage) > 0.1 && (
             <div
-              className={`h-full transition-all duration-500 ${
-                isPositive ? "bg-green-400" : "bg-red-400"
+              className={`flex items-center gap-1 mt-1 ${
+                isGrowing ? "text-success-600" : "text-danger-600"
               }`}
-              style={{ width: `${progresso}%` }}
-            ></div>
-          </div>
-
-          {/* Comparação com mês anterior */}
-          <p className="text-sm text-gray-500 mt-2">
-            {difference >= 0 ? "+" : "-"}R$ {Math.abs(difference).toFixed(2)} em
-            relação a abril
-          </p>
+            >
+              {isGrowing ? (
+                <TrendingUp size={12} />
+              ) : (
+                <TrendingDown size={12} />
+              )}
+              <span className="text-xs font-medium">
+                {Math.abs(changePercentage).toFixed(1)}% vs mês anterior
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>

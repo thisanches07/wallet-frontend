@@ -1,18 +1,18 @@
 import {
+  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+} from "firebase/auth";
+import {
   createContext,
+  ReactNode,
   useContext,
   useEffect,
   useState,
-  ReactNode,
 } from "react";
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  onAuthStateChanged,
-  signOut,
-  GoogleAuthProvider,
-  signInWithPopup,
-} from "firebase/auth";
 import { auth } from "../lib/firebase";
 
 interface AuthContextProps {
@@ -93,11 +93,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const googleLogin = async () => {
-    const provider = new GoogleAuthProvider();
-    const userCredential = await signInWithPopup(auth, provider);
-    const idToken = await userCredential.user.getIdToken();
-    setUser(userCredential.user);
-    setToken(idToken);
+    try {
+      const provider = new GoogleAuthProvider();
+      // Adicionar configurações para garantir que funcione corretamente
+      provider.addScope("email");
+      provider.addScope("profile");
+
+      const userCredential = await signInWithPopup(auth, provider);
+      const idToken = await userCredential.user.getIdToken();
+      setUser(userCredential.user);
+      setToken(idToken);
+
+      console.log("✅ Login com Google realizado com sucesso:", {
+        name: userCredential.user.displayName,
+        email: userCredential.user.email,
+        photo: userCredential.user.photoURL,
+      });
+    } catch (error: any) {
+      console.error("❌ Erro no login com Google:", error);
+      throw error;
+    }
   };
 
   const logout = async () => {
