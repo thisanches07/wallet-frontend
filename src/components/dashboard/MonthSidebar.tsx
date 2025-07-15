@@ -67,7 +67,12 @@ export function MonthSidebar({ selected, onSelect }: Props) {
 
       {/* Mês Atual - Destaque principal */}
       <div className="p-4 bg-gradient-to-br from-primary-50 to-blue-50 border-b border-primary-100">
-        <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-primary-200 shadow-sm">
+        <button
+          onClick={() => onSelect(currentMonth)}
+          className={`w-full bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-primary-200 shadow-sm transition-all hover:bg-white/90 hover:shadow-md ${
+            selected === currentMonth ? "ring-2 ring-primary-300" : ""
+          }`}
+        >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <div className="bg-primary-500 text-white px-2.5 py-1 rounded-lg text-sm font-bold">
@@ -143,7 +148,7 @@ export function MonthSidebar({ selected, onSelect }: Props) {
               </div>
             );
           })()}
-        </div>
+        </button>
       </div>
 
       {/* Lista compacta de meses */}
@@ -159,9 +164,6 @@ export function MonthSidebar({ selected, onSelect }: Props) {
             const isSelected = selected === index;
             const isCurrentMonth = index === currentMonth;
 
-            // Não renderizar o mês atual novamente
-            if (isCurrentMonth) return null;
-
             return (
               <button
                 key={month}
@@ -169,6 +171,8 @@ export function MonthSidebar({ selected, onSelect }: Props) {
                 className={`w-full p-3 rounded-lg transition-all duration-200 text-left border ${
                   isSelected
                     ? "bg-primary-50 border-primary-200 shadow-sm"
+                    : isCurrentMonth
+                    ? "bg-emerald-50 border-emerald-200 hover:bg-emerald-100"
                     : "hover:bg-neutral-50 border-transparent hover:border-neutral-200"
                 }`}
               >
@@ -178,12 +182,22 @@ export function MonthSidebar({ selected, onSelect }: Props) {
                       className={`text-xs font-bold px-2 py-0.5 rounded ${
                         isSelected
                           ? "bg-primary-100 text-primary-700"
+                          : isCurrentMonth
+                          ? "bg-emerald-100 text-emerald-700"
                           : "bg-neutral-100 text-neutral-600"
                       }`}
                     >
                       {monthsShort[index]}
                     </span>
-                    <CheckCircle className="w-3 h-3 text-emerald-500" />
+                    {isCurrentMonth && (
+                      <div className="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full text-xs font-semibold">
+                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                        Atual
+                      </div>
+                    )}
+                    {!isCurrentMonth && (
+                      <CheckCircle className="w-3 h-3 text-emerald-500" />
+                    )}
                   </div>
 
                   <div

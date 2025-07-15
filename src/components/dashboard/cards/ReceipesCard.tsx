@@ -1,29 +1,31 @@
-import { Pencil, TrendingDown, TrendingUp } from "lucide-react";
+import { useMonthlyData } from "@/context/MonthlyDataContext";
+import { useSelectedMonth } from "@/context/SelectedMonthContext";
+import { TrendingDown, TrendingUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 export default function ReceipesCard() {
+  const { selectedMonth, selectedYear, isCurrentMonth } = useSelectedMonth();
+  const { incomes, loading } = useMonthlyData(selectedMonth, selectedYear);
+
   const [isEditing, setIsEditing] = useState(false);
-  const [receitas, setReceitas] = useState(0);
+  const [totalReceitas, setTotalReceitas] = useState(0);
   const [inputValue, setInputValue] = useState(0);
+  const [previousReceitas] = useState(4500); // Valor anterior para comparação
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Simulação de comparação mensal
-  const previousReceitas = 4500; // Mock do mês anterior
-  const change = receitas - previousReceitas;
+  const change = totalReceitas - previousReceitas;
   const changePercentage =
     previousReceitas > 0 ? (change / previousReceitas) * 100 : 0;
   const isGrowing = change > 0;
 
   useEffect(() => {
-    const saved = localStorage.getItem("receitasTotal");
-    if (saved) {
-      const parsed = parseFloat(saved);
-      if (!isNaN(parsed)) {
-        setReceitas(parsed);
-        setInputValue(parsed);
-      }
-    }
-  }, []);
+    const total = incomes.reduce(
+      (acc: number, receita) => acc + Number(receita.amount),
+      0
+    );
+    setTotalReceitas(total);
+    setInputValue(total);
+  }, [incomes]);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -33,10 +35,12 @@ export default function ReceipesCard() {
   }, [isEditing]);
 
   const saveChanges = () => {
-    localStorage.setItem("receitasTotal", inputValue.toString());
-    setReceitas(inputValue);
     setIsEditing(false);
+    // TODO: Implementar funcionalidade de ajuste se necessário
   };
+
+  const receitasRecorrentes = incomes.filter((r) => r.tipo === "recorrente");
+  const receitasPontuais = incomes.filter((r) => r.tipo === "pontual");
 
   return (
     <div className="bg-white border border-neutral-200/80 p-6 rounded-2xl shadow-sm transition-all duration-300 group">
@@ -47,7 +51,7 @@ export default function ReceipesCard() {
 
         <div className="flex-1">
           <h3 className="text-sm font-medium text-neutral-500 mb-1">
-            Receitas
+            Receitas Totais
           </h3>
 
           <div className="flex items-center gap-2">
@@ -59,32 +63,56 @@ export default function ReceipesCard() {
                 onChange={(e) => setInputValue(Number(e.target.value))}
                 onBlur={saveChanges}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") saveChanges();
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    saveChanges();
+                  }
                 }}
                 className="text-2xl font-bold text-neutral-900 border-2 border-primary-300 rounded-lg px-2 py-1 w-40 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-all"
               />
             ) : (
-              <>
-                <p className="text-2xl font-bold text-success-600 tracking-tight">
-                  R${" "}
-                  {receitas.toLocaleString("pt-BR", {
-                    minimumFractionDigits: 2,
-                  })}
-                </p>
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-primary-600 transition-all duration-200 p-1 hover:bg-primary-50 rounded-md"
-                  aria-label="Editar receitas"
-                >
-                  <Pencil size={14} />
-                </button>
-              </>
+              <p className="text-2xl font-bold text-success-600 tracking-tight">
+                R${" "}
+                {totalReceitas.toLocaleString("pt-BR", {
+                  minimumFractionDigits: 2,
+                })}
+              </p>
             )}
           </div>
 
-          <p className="text-xs text-neutral-400 mt-1">Este mês</p>
+          {incomes.length > 0 && (
+            <div className="mt-2 space-y-1">
+              {receitasRecorrentes.length > 0 && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-neutral-500">Recorrente:</span>
+                  <span className="font-medium text-success-700">
+                    R${" "}
+                    {receitasRecorrentes
+                      .reduce((acc: number, r) => acc + r.amount, 0)
+                      .toLocaleString("pt-BR")}
+                  </span>
+                </div>
+              )}
+              {receitasPontuais.length > 0 && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-neutral-500">Pontual:</span>
+                  <span className="font-medium text-primary-700">
+                    R${" "}
+                    {receitasPontuais
+                      .reduce((acc: number, r) => acc + r.amount, 0)
+                      .toLocaleString("pt-BR")}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
 
-          {/* Indicador sutil de tendência */}
+          <p className="text-xs text-neutral-400 mt-1">
+            {isCurrentMonth()
+              ? "Este mês"
+              : `${selectedMonth + 1}/${selectedYear}`}
+          </p>
+
           {Math.abs(changePercentage) > 0.1 && (
             <div
               className={`flex items-center gap-1 mt-1 ${
@@ -98,7 +126,7 @@ export default function ReceipesCard() {
               )}
               <span className="text-xs font-medium">
                 {isGrowing ? "+" : ""}
-                {Math.abs(changePercentage).toFixed(1)}%
+                {Math.abs(changePercentage).toFixed(1)}% vs mês anterior
               </span>
             </div>
           )}

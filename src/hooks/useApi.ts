@@ -37,8 +37,24 @@ export function useApi() {
         }),
 
       // Transações
-      getTransactions: () => apiCall("/api/transactions"),
-      getExpenses: () => apiCall("/api/expenses"),
+      getTransactions: (filters?: { month?: number; year?: number }) => {
+        const params = new URLSearchParams();
+        if (filters?.month !== undefined)
+          params.append("month", filters.month.toString());
+        if (filters?.year !== undefined)
+          params.append("year", filters.year.toString());
+        const query = params.toString() ? `?${params.toString()}` : "";
+        return apiCall(`/api/transactions${query}`);
+      },
+      getExpenses: (filters?: { month?: number; year?: number }) => {
+        const params = new URLSearchParams();
+        if (filters?.month !== undefined)
+          params.append("month", filters.month.toString());
+        if (filters?.year !== undefined)
+          params.append("year", filters.year.toString());
+        const query = params.toString() ? `?${params.toString()}` : "";
+        return apiCall(`/api/expenses${query}`);
+      },
       createExpense: (expense: any) =>
         apiCall("/api/expenses", {
           method: "POST",
@@ -60,7 +76,15 @@ export function useApi() {
         }),
 
       // Receitas/Incomes
-      getIncomes: () => apiCall("/api/incomes"),
+      getIncomes: (filters?: { month?: number; year?: number }) => {
+        const params = new URLSearchParams();
+        if (filters?.month !== undefined)
+          params.append("month", filters.month.toString());
+        if (filters?.year !== undefined)
+          params.append("year", filters.year.toString());
+        const query = params.toString() ? `?${params.toString()}` : "";
+        return apiCall(`/api/incomes${query}`);
+      },
       createIncome: (income: any) =>
         apiCall("/api/incomes", {
           method: "POST",
@@ -109,7 +133,8 @@ export function useExpenses() {
 
   return useMemo(
     () => ({
-      getExpenses: api.getExpenses,
+      getExpenses: (filters?: { month?: number; year?: number }) =>
+        api.getExpenses(filters),
       createExpense: api.createExpense,
     }),
     [api]
@@ -121,7 +146,8 @@ export function useIncomes() {
 
   return useMemo(
     () => ({
-      getIncomes: api.getIncomes,
+      getIncomes: (filters?: { month?: number; year?: number }) =>
+        api.getIncomes(filters),
       createIncome: api.createIncome,
     }),
     [api]

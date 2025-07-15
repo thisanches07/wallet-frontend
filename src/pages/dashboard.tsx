@@ -7,6 +7,11 @@ import { MonthlyPlanningCard } from "@/components/dashboard/MonthlyPlanningCard"
 import { MonthSidebar } from "@/components/dashboard/MonthSidebar";
 import { NotificationCenter } from "@/components/dashboard/NotificationCenter";
 import { Topbar } from "@/components/Topbar";
+import { MonthlyDataProvider } from "@/context/MonthlyDataContext";
+import {
+  SelectedMonthProvider,
+  useSelectedMonth,
+} from "@/context/SelectedMonthContext";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardData } from "@/types/dashboard";
 import { TrendingUp } from "lucide-react";
@@ -14,6 +19,17 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
 export default function DashboardPage() {
+  return (
+    <SelectedMonthProvider>
+      <MonthlyDataProvider>
+        <DashboardContent />
+      </MonthlyDataProvider>
+    </SelectedMonthProvider>
+  );
+}
+
+function DashboardContent() {
+  const { selectedMonth, setSelectedMonth } = useSelectedMonth();
   const mockData: DashboardData = {
     income: 5000,
     expenses: 4200,
@@ -47,9 +63,6 @@ export default function DashboardPage() {
     "Nov",
     "Dec",
   ];
-  const [selectedMonth, setSelectedMonth] = useState<number>(
-    new Date().getMonth()
-  );
 
   useEffect(() => {
     if (!loading) {

@@ -1,11 +1,39 @@
+import { useMonthlyData } from "@/context/MonthlyDataContext";
+import { useSelectedMonth } from "@/context/SelectedMonthContext";
 import { TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 export default function BalanceCard() {
+  const { selectedMonth, selectedYear, isCurrentMonth } = useSelectedMonth();
+  const { expenses, incomes, loading } = useMonthlyData(
+    selectedMonth,
+    selectedYear
+  );
   const [isEditing, setIsEditing] = useState(false);
   const [balance, setBalance] = useState(0);
   const [inputValue, setInputValue] = useState(0);
+  const [totalExpenses, setTotalExpenses] = useState(0);
+  const [totalIncomes, setTotalIncomes] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Calcular totais
+  useEffect(() => {
+    const expensesTotal = expenses.reduce(
+      (acc, expense) => acc + Number(expense.valor),
+      0
+    );
+    const incomesTotal = incomes.reduce(
+      (acc, income) => acc + Number(income.amount),
+      0
+    );
+
+    setTotalExpenses(expensesTotal);
+    setTotalIncomes(incomesTotal);
+
+    const calculatedBalance = incomesTotal - expensesTotal;
+    setBalance(calculatedBalance);
+    setInputValue(calculatedBalance);
+  }, [expenses, incomes]);
 
   const isPositive = balance >= 0;
 
@@ -17,17 +45,6 @@ export default function BalanceCard() {
   const isGrowing = change > 0;
 
   useEffect(() => {
-    const saved = localStorage.getItem("balanceTotal");
-    if (saved) {
-      const parsed = parseFloat(saved);
-      if (!isNaN(parsed)) {
-        setBalance(parsed);
-        setInputValue(parsed);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
       inputRef.current.select();
@@ -35,8 +52,6 @@ export default function BalanceCard() {
   }, [isEditing]);
 
   const saveChanges = () => {
-    localStorage.setItem("balanceTotal", inputValue.toString());
-    setBalance(inputValue);
     setIsEditing(false);
   };
 
@@ -70,18 +85,16 @@ export default function BalanceCard() {
                 className="text-2xl font-bold text-neutral-900 border-2 border-primary-300 rounded-lg px-2 py-1 w-40 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-all"
               />
             ) : (
-              <>
-                <p
-                  className={`text-2xl font-bold tracking-tight ${
-                    isPositive ? "text-neutral-900" : "text-danger-600"
-                  }`}
-                >
-                  R${" "}
-                  {balance.toLocaleString("pt-BR", {
-                    minimumFractionDigits: 2,
-                  })}
-                </p>
-              </>
+              <p
+                className={`text-2xl font-bold tracking-tight ${
+                  isPositive ? "text-success-600" : "text-danger-600"
+                }`}
+              >
+                R${" "}
+                {balance.toLocaleString("pt-BR", {
+                  minimumFractionDigits: 2,
+                })}
+              </p>
             )}
           </div>
 
@@ -90,6 +103,12 @@ export default function BalanceCard() {
               Atenção: Saldo negativo
             </p>
           )}
+
+          <p className="text-xs text-neutral-400 mt-1">
+            {isCurrentMonth()
+              ? "Este mês"
+              : `${selectedMonth + 1}/${selectedYear}`}
+          </p>
 
           {/* Indicador sutil de tendência */}
           {Math.abs(changePercentage) > 0.1 && (

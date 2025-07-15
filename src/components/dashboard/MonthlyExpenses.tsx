@@ -1,6 +1,6 @@
 import { AddExpenseModal } from "@/components/dashboard/modals/AddExpenseModal";
-import { useExpenses } from "@/hooks/useApi";
-import { Expense } from "@/types/expense";
+import { useMonthlyData } from "@/context/MonthlyDataContext";
+import { useSelectedMonth } from "@/context/SelectedMonthContext";
 import { Calendar, Plus, Receipt } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -24,54 +24,20 @@ type ApiExpense = {
 };
 
 export function MonthlyExpenses() {
-  const { getExpenses } = useExpenses();
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { selectedMonth, selectedYear } = useSelectedMonth();
+  const { expenses, loading, error } = useMonthlyData(
+    selectedMonth,
+    selectedYear
+  );
   const [showModal, setShowModal] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [justAdded, setJustAdded] = useState<string | null>(null);
 
-  const convertApiExpenseToExpense = (apiExpense: ApiExpense): Expense => ({
-    id: apiExpense.id.toString(),
-    descricao: apiExpense.description,
-    categoria: apiExpense.category.name,
-    valor: apiExpense.amount,
-    data: apiExpense.date.split("T")[0],
-  });
-
-  const loadExpenses = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const apiExpenses = await getExpenses();
-      if (Array.isArray(apiExpenses)) {
-        const convertedExpenses = apiExpenses.map(convertApiExpenseToExpense);
-        setExpenses(convertedExpenses);
-      } else {
-        setExpenses([]);
-      }
-    } catch (err) {
-      console.error("Erro ao carregar despesas:", err);
-      setError("Erro ao carregar despesas. Tente novamente.");
-      setExpenses([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Escutar evento de nova despesa apenas para atualizar a marcação visual
   useEffect(() => {
-    loadExpenses();
-
     const handleExpenseAdded = (e: CustomEvent) => {
-      const newExpense: Expense | undefined = e.detail;
+      const newExpense = e.detail;
       if (!newExpense || !newExpense.id) return;
-
-      setExpenses((prev) => {
-        const exists = prev.some((d) => d.id === newExpense.id);
-        if (exists) return prev;
-        return [newExpense, ...prev];
-      });
 
       setJustAdded(newExpense.id);
       setTimeout(() => setJustAdded(null), 3000);
@@ -88,7 +54,7 @@ export function MonthlyExpenses() {
         handleExpenseAdded as EventListener
       );
     };
-  }, [getExpenses]);
+  }, []);
 
   const getCategoryIcon = (categoria: string): string => {
     const iconMap: Record<string, string> = {
@@ -119,7 +85,10 @@ export function MonthlyExpenses() {
     );
   };
 
-  const totalExpenses = expenses.reduce((acc, item) => acc + +item.valor, 0);
+  const totalExpenses = expenses.reduce(
+    (acc: number, item) => acc + +item.valor,
+    0
+  );
   const displayedExpenses = showAll ? expenses : expenses.slice(0, 4);
 
   return (
@@ -190,7 +159,7 @@ export function MonthlyExpenses() {
         ) : (
           <>
             <div className="space-y-2">
-              {displayedExpenses.map((item, index) => (
+              {displayedExpenses.map((item, index: number) => (
                 <div
                   key={item.id}
                   className={`group p-3 rounded-xl border transition-all duration-200 animate-fade-in ${

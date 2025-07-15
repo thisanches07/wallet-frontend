@@ -1,49 +1,15 @@
-import { useExpenses } from "@/hooks/useApi";
-import { Expense } from "@/types/expense";
-import { convertApiExpenseToExpense } from "@/utils/expenseUtils";
+import { useMonthlyData } from "@/context/MonthlyDataContext";
+import { useSelectedMonth } from "@/context/SelectedMonthContext";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 export default function ExpensesCard() {
-  const { getExpenses } = useExpenses();
+  const { selectedMonth, selectedYear, isCurrentMonth } = useSelectedMonth();
+  const { expenses, loading } = useMonthlyData(selectedMonth, selectedYear);
   const [isEditing, setIsEditing] = useState(false);
   const [gastos, setGastos] = useState(0);
   const [inputValue, setInputValue] = useState(0);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Carregar despesas da API
-  useEffect(() => {
-    const loadExpenses = async () => {
-      try {
-        const apiExpenses = await getExpenses();
-        if (Array.isArray(apiExpenses)) {
-          const convertedExpenses = apiExpenses.map(convertApiExpenseToExpense);
-          setExpenses(convertedExpenses);
-        } else {
-          setExpenses([]);
-        }
-      } catch (err) {
-        console.error("Erro ao carregar despesas:", err);
-        setExpenses([]);
-      }
-    };
-
-    // Primeira carga
-    loadExpenses();
-
-    // Escutar evento de nova despesa
-    const handleExpenseAdded = () => {
-      loadExpenses(); // Atualiza as despesas
-    };
-
-    window.addEventListener("expenseAdded", handleExpenseAdded);
-
-    // Cleanup
-    return () => {
-      window.removeEventListener("expenseAdded", handleExpenseAdded);
-    };
-  }, [getExpenses]);
 
   // Simulação de comparação mensal
   const previousGastos = 3200; // Mock do mês anterior
@@ -117,7 +83,11 @@ export default function ExpensesCard() {
             )}
           </div>
 
-          <p className="text-xs text-neutral-400 mt-1">Este mês</p>
+          <p className="text-xs text-neutral-400 mt-1">
+            {isCurrentMonth()
+              ? "Este mês"
+              : `${selectedMonth + 1}/${selectedYear}`}
+          </p>
 
           {/* Indicador sutil de tendência - Para gastos, vermelho = aumento, verde = redução */}
           {Math.abs(changePercentage) > 0.1 && (
