@@ -1,11 +1,34 @@
-import { Calendar, DollarSign, RefreshCw, Tag, X } from "lucide-react";
+import { useCategories } from "@/context/CategoriesContext";
+import { useIncomes } from "@/hooks/useApi";
+import { Calendar, DollarSign, Tag, X } from "lucide-react";
 import { useState } from "react";
 
+type ApiIncome = {
+  id: number;
+  description: string;
+  amount: number;
+  startDate: string;
+  endDate: string;
+  category: {
+    id: number;
+    name: string;
+    type: string;
+  };
+};
+
 interface IncomeData {
+  id?: string;
   tipo: "recorrente" | "pontual";
   descricao: string;
   valor: number;
-  categoria: "salario" | "freelance" | "investimento" | "bonus" | "outros";
+  categoria: string;
+  categoriaInfo?: {
+    id: string;
+    name: string;
+    icon: string;
+    color: string;
+    type: string;
+  };
   dataRecebimento?: string;
   recorrencia?: "mensal" | "quinzenal" | "semanal";
 }
@@ -16,35 +39,193 @@ interface Props {
 }
 
 export function AddIncomeModal({ onClose, onAdd }: Props) {
+  const { createIncome } = useIncomes();
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const {
+    getIncomeCategories,
+    loading: categoriesLoading,
+    error: categoriesError,
+    getCategoryById,
+  } = useCategories();
+  const apiCategories = getIncomeCategories();
+
   const [form, setForm] = useState<IncomeData>({
     tipo: "recorrente",
     descricao: "",
     valor: 0,
-    categoria: "salario",
+    categoria: "",
     recorrencia: "mensal",
+    dataRecebimento: new Date().toISOString().split("T")[0],
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Helper para obter informações da categoria selecionada
+  const getSelectedCategoryInfo = () => {
+    if (!form.categoria) return null;
+    return apiCategories.find((cat) => cat.id === form.categoria) || null;
+  };
+
+  // Função para converter API response para formato interno
+  const convertApiIncomeToIncome = (apiIncome: ApiIncome): IncomeData => {
+    // Buscar informações adicionais da categoria (ícone e cor) das categorias locais
+    const localCategory = apiCategories.find(
+      (cat) =>
+        cat.name.toLowerCase() === apiIncome.category.name.toLowerCase() ||
+        cat.id === apiIncome.category.id.toString()
+    );
+
+    // Determinar se é recorrente ou pontual baseado nas datas
+    const startDate = new Date(apiIncome.startDate);
+    const endDate = new Date(apiIncome.endDate);
+
+    // Se a data de fim é muito no futuro (ano 2099), é uma receita recorrente mensal
+    // Se as datas são do mesmo dia, é uma receita pontual
+    const isRecurring = endDate.getFullYear() >= 2099;
+    const isSameDay = startDate.toDateString() === endDate.toDateString();
+
+    let tipo: "recorrente" | "pontual";
+    let recorrencia: "mensal" | "quinzenal" | "semanal" | undefined;
+
+    if (isRecurring) {
+      tipo = "recorrente";
+      recorrencia = "mensal"; // Por enquanto só suportamos mensais
+    } else if (isSameDay) {
+      tipo = "pontual";
+      recorrencia = undefined;
+    } else {
+      // Fallback - se não é nem recorrente nem do mesmo dia, considera como pontual
+      tipo = "pontual";
+      recorrencia = undefined;
+    }
+
+    return {
+      id: apiIncome.id.toString(),
+      descricao: apiIncome.description,
+      categoria: apiIncome.category.name,
+      valor: apiIncome.amount,
+      dataRecebimento: apiIncome.startDate.split("T")[0],
+      tipo: tipo,
+      recorrencia: recorrencia,
+      categoriaInfo: {
+        id: apiIncome.category.id.toString(),
+        name: apiIncome.category.name,
+        icon: localCategory?.icon || "💰",
+        color: localCategory?.color || "#10B981",
+        type: apiIncome.category.type,
+      },
+    };
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (form.descricao && form.valor > 0) {
-      onAdd(form);
+
+    // Validação
+    const newErrors: Record<string, string> = {};
+
+    if (!form.descricao.trim()) {
+      newErrors.descricao = "Descrição é obrigatória";
+    }
+
+    if (!form.categoria) {
+      newErrors.categoria = "Selecione uma categoria";
+    }
+
+    if (form.valor <= 0) {
+      newErrors.valor = "Valor deve ser maior que zero";
+    }
+
+    if (!form.dataRecebimento) {
+      newErrors.dataRecebimento = "Data é obrigatória";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Preparar dados para a API
+      const selectedCategory = getSelectedCategoryInfo();
+      const startDate = new Date(form.dataRecebimento!);
+      startDate.setHours(0, 0, 0, 0); // Início do dia
+
+      let endDate: Date | undefined = undefined;
+      if (form.tipo === "pontual") {
+        // Para receitas pontuais, início e fim no mesmo dia
+        endDate = new Date(startDate);
+        endDate.setHours(23, 59, 59, 999); // Final do dia
+      }
+
+      const apiIncomeData = {
+        description: form.descricao,
+        amount: form.valor,
+        startDate: startDate.toISOString(),
+        endDate: endDate?.toISOString(),
+        categoryId: selectedCategory?.id
+          ? parseInt(selectedCategory.id)
+          : parseInt(form.categoria),
+      };
+
+      // Criar na API
+      const createdIncome = (await createIncome(apiIncomeData)) as ApiIncome;
+
+      // Converter resposta da API para formato interno
+      const newIncome = convertApiIncomeToIncome(createdIncome);
+
+      // Chamar callback para atualizar a lista no componente pai
+      onAdd(newIncome);
+      window.dispatchEvent(
+        new CustomEvent("incomeAdded", { detail: newIncome })
+      );
+      // Fechar modal
       onClose();
+    } catch (error) {
+      console.error("Erro ao criar receita:", error);
+
+      // Em caso de erro, criar localmente como fallback
+      const selectedCategory = getSelectedCategoryInfo();
+      const fallbackIncome: IncomeData = {
+        id: Date.now().toString(),
+        descricao: form.descricao,
+        categoria: selectedCategory?.name || form.categoria,
+        valor: form.valor,
+        dataRecebimento: form.dataRecebimento,
+        tipo: form.tipo,
+        recorrencia: form.recorrencia,
+        ...(selectedCategory && {
+          categoriaInfo: {
+            id: selectedCategory.id,
+            name: selectedCategory.name,
+            icon: selectedCategory.icon || "💰",
+            color: selectedCategory.color || "#10B981",
+            type: selectedCategory.type || "income",
+          },
+        }),
+      };
+
+      onAdd(fallbackIncome);
+      window.dispatchEvent(
+        new CustomEvent("incomeAdded", { detail: fallbackIncome })
+      );
+      onClose();
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const categoriaOptions = {
-    salario: { label: "💼 Salário", color: "bg-blue-100 text-blue-700" },
-    freelance: {
-      label: "💻 Freelance",
-      color: "bg-purple-100 text-purple-700",
-    },
-    investimento: {
-      label: "📈 Investimentos",
-      color: "bg-green-100 text-green-700",
-    },
-    bonus: { label: "🎁 Bônus", color: "bg-yellow-100 text-yellow-700" },
-    outros: { label: "📦 Outros", color: "bg-gray-100 text-gray-700" },
+  const handleInputChange = (field: keyof IncomeData, value: any) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    // Limpar erro do campo quando usuário começar a digitar
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
   };
+
+  // Categorias da API
+  const categories = apiCategories;
 
   return (
     <div
@@ -56,204 +237,239 @@ export function AddIncomeModal({ onClose, onAdd }: Props) {
       }}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-neutral-200 animate-scale-in"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden animate-scale-in flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-neutral-100">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 bg-gradient-success rounded-xl">
-              <DollarSign className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-neutral-900">
-                Nova Receita
-              </h3>
-              <p className="text-sm text-neutral-500">
-                Adicionar fonte de renda
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Tipo de receita */}
-          <div className="space-y-3">
-            <label className="text-sm font-semibold text-neutral-700">
-              Tipo de Receita
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setForm({ ...form, tipo: "recorrente" })}
-                className={`p-3 rounded-xl border-2 transition-all ${
-                  form.tipo === "recorrente"
-                    ? "border-success-300 bg-success-50 text-success-700"
-                    : "border-neutral-200 text-neutral-600 hover:border-neutral-300"
-                }`}
-              >
-                <RefreshCw className="w-4 h-4 mx-auto mb-1" />
-                <span className="text-xs font-medium">Recorrente</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setForm({ ...form, tipo: "pontual" })}
-                className={`p-3 rounded-xl border-2 transition-all ${
-                  form.tipo === "pontual"
-                    ? "border-primary-300 bg-primary-50 text-primary-700"
-                    : "border-neutral-200 text-neutral-600 hover:border-neutral-300"
-                }`}
-              >
-                <Calendar className="w-4 h-4 mx-auto mb-1" />
-                <span className="text-xs font-medium">Pontual</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Descrição */}
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-neutral-700">
-              Descrição
-            </label>
-            <input
-              value={form.descricao}
-              onChange={(e) => setForm({ ...form, descricao: e.target.value })}
-              placeholder="Ex: Salário Empresa X, Projeto Freelance..."
-              className="w-full px-4 py-3 border border-neutral-200 rounded-xl focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-all"
-              required
-            />
-          </div>
-
-          {/* Categoria */}
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-semibold text-neutral-700">
-              <Tag className="w-4 h-4" />
-              Categoria
-            </label>
-            <select
-              value={form.categoria}
-              onChange={(e) =>
-                setForm({ ...form, categoria: e.target.value as any })
-              }
-              className="w-full px-4 py-3 border border-neutral-200 rounded-xl focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-all"
-              required
-            >
-              {Object.entries(categoriaOptions).map(([value, config]) => (
-                <option key={value} value={value}>
-                  {config.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Valor */}
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-neutral-700">
-              Valor (R$)
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={form.valor || ""}
-              onChange={(e) =>
-                setForm({ ...form, valor: Number(e.target.value) })
-              }
-              placeholder="0,00"
-              className="w-full px-4 py-3 border border-neutral-200 rounded-xl focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-all"
-              required
-            />
-          </div>
-
-          {/* Recorrência (apenas para receitas recorrentes) */}
-          {form.tipo === "recorrente" && (
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-neutral-700">
-                Frequência
-              </label>
-              <select
-                value={form.recorrencia}
-                onChange={(e) =>
-                  setForm({ ...form, recorrencia: e.target.value as any })
-                }
-                className="w-full px-4 py-3 border border-neutral-200 rounded-xl focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-all"
-              >
-                <option value="mensal">Mensal</option>
-                <option value="quinzenal">Quinzenal</option>
-                <option value="semanal">Semanal</option>
-              </select>
-            </div>
-          )}
-
-          {/* Data (apenas para receitas pontuais) */}
-          {form.tipo === "pontual" && (
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-neutral-700">
-                Data de Recebimento
-              </label>
-              <input
-                type="date"
-                value={
-                  form.dataRecebimento ||
-                  new Date().toISOString().substring(0, 10)
-                }
-                onChange={(e) =>
-                  setForm({ ...form, dataRecebimento: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-neutral-200 rounded-xl focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-all"
-                required
-              />
-            </div>
-          )}
-
-          {/* Preview */}
-          {form.valor > 0 && (
-            <div className="bg-success-50 border border-success-200 rounded-xl p-4">
-              <h4 className="font-semibold text-success-900 mb-2">Preview</h4>
-              <div className="space-y-1">
-                <p className="text-sm text-success-800">
-                  <span className="font-medium">{form.descricao}</span>
-                </p>
-                <p className="text-sm text-success-700">
-                  {categoriaOptions[form.categoria].label} •
-                  {form.tipo === "recorrente"
-                    ? ` ${form.recorrencia}`
-                    : " pontual"}
-                </p>
-                <p className="text-lg font-bold text-success-800">
-                  R${" "}
-                  {form.valor.toLocaleString("pt-BR", {
-                    minimumFractionDigits: 2,
-                  })}
+        <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <DollarSign className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold">Nova Receita</h3>
+                <p className="text-green-100 text-sm">
+                  Adicionar fonte de renda
                 </p>
               </div>
             </div>
-          )}
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
 
-          {/* Actions */}
-          <div className="flex gap-3 pt-4">
+        {/* Form - scrollable content */}
+        <div className="flex-1 overflow-y-auto">
+          <form
+            onSubmit={handleSubmit}
+            id="income-form"
+            className="p-6 space-y-6"
+          >
+            {/* Descrição */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <Tag className="w-4 h-4" />
+                Descrição
+              </label>
+              <input
+                type="text"
+                value={form.descricao}
+                onChange={(e) => handleInputChange("descricao", e.target.value)}
+                placeholder="Ex: Salário Empresa X, Projeto Freelance..."
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
+                  errors.descricao
+                    ? "border-red-500 bg-red-50"
+                    : "border-gray-300"
+                }`}
+              />
+              {errors.descricao && (
+                <p className="text-red-500 text-xs">{errors.descricao}</p>
+              )}
+            </div>
+
+            {/* Categoria */}
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <Tag className="w-4 h-4" />
+                Categoria
+                {categoriesLoading && (
+                  <span className="inline-flex items-center gap-1 text-xs text-blue-600">
+                    <div className="w-3 h-3 border border-blue-300 border-t-blue-600 rounded-full animate-spin"></div>
+                    Carregando...
+                  </span>
+                )}
+                {!categoriesLoading && apiCategories.length > 0 && (
+                  <span className="text-xs text-green-600">
+                    ✓ {apiCategories.length} categorias
+                  </span>
+                )}
+                {!categoriesLoading && apiCategories.length === 0 && (
+                  <span className="text-xs text-amber-600">
+                    ⚠️ Modo offline
+                  </span>
+                )}
+              </label>
+              <div
+                className={`grid grid-cols-2 gap-2 ${
+                  errors.categoria
+                    ? "ring-2 ring-red-500 ring-opacity-20 rounded-xl p-2"
+                    : ""
+                }`}
+              >
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    type="button"
+                    onClick={() => handleInputChange("categoria", category.id)}
+                    className={`p-3 text-xs font-medium border rounded-xl transition-all ${
+                      form.categoria === category.id
+                        ? "bg-blue-50 text-blue-700 border-blue-300 ring-2 ring-blue-500 ring-opacity-20"
+                        : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
+                    }`}
+                    disabled={categoriesLoading}
+                  >
+                    {category.icon} {category.name}
+                  </button>
+                ))}
+              </div>
+              {errors.categoria && (
+                <p className="text-red-500 text-xs">{errors.categoria}</p>
+              )}
+              {!categoriesLoading && apiCategories.length === 0 && (
+                <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-2">
+                  ⚠️ Não foi possível carregar as categorias do servidor. Usando
+                  categorias padrão.
+                </p>
+              )}
+            </div>
+
+            {/* Valor e Data */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                  <DollarSign className="w-4 h-4" />
+                  Valor
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                    R$
+                  </span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={form.valor > 0 ? form.valor : ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const numValue = value === "" ? 0 : parseFloat(value);
+                      handleInputChange("valor", numValue);
+                    }}
+                    placeholder="0,00"
+                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
+                      errors.valor
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-300"
+                    }`}
+                  />
+                </div>
+                {errors.valor && (
+                  <p className="text-red-500 text-xs">{errors.valor}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                  <Calendar className="w-4 h-4" />
+                  Data
+                </label>
+                <input
+                  type="date"
+                  value={
+                    form.dataRecebimento ||
+                    new Date().toISOString().substring(0, 10)
+                  }
+                  onChange={(e) =>
+                    handleInputChange("dataRecebimento", e.target.value)
+                  }
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
+                    errors.dataRecebimento
+                      ? "border-red-500 bg-red-50"
+                      : "border-gray-300"
+                  }`}
+                />
+                {errors.dataRecebimento && (
+                  <p className="text-red-500 text-xs">
+                    {errors.dataRecebimento}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Tipo de Receita */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-gray-700">
+                Tipo de Receita
+              </label>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleInputChange("tipo", "pontual")}
+                  className={`flex-1 p-3 text-sm font-medium border rounded-xl transition-all ${
+                    form.tipo === "pontual"
+                      ? "bg-blue-50 text-blue-700 border-blue-300 ring-2 ring-blue-500 ring-opacity-20"
+                      : "bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100"
+                  }`}
+                >
+                  💰 Receita Única
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleInputChange("tipo", "recorrente")}
+                  className={`flex-1 p-3 text-sm font-medium border rounded-xl transition-all ${
+                    form.tipo === "recorrente"
+                      ? "bg-green-50 text-green-700 border-green-300 ring-2 ring-green-500 ring-opacity-20"
+                      : "bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100"
+                  }`}
+                >
+                  🔄 Recorrente
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        {/* Fixed Buttons - outside the scrollable area */}
+        <div className="border-t bg-gray-50 p-4">
+          <div className="flex gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 text-neutral-600 hover:text-neutral-800 hover:bg-neutral-100 rounded-xl transition-colors font-medium"
+              className="flex-1 px-6 py-4 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-2xl font-medium transition-colors text-lg"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-3 bg-gradient-success text-white rounded-xl hover:shadow-lg transition-all font-medium"
+              form="income-form"
+              disabled={isSubmitting || categoriesLoading}
+              className="flex-1 px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-2xl font-medium transition-all shadow-lg hover:shadow-xl text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Adicionar Receita
+              {isSubmitting ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Salvando...
+                </>
+              ) : (
+                "Adicionar Receita"
+              )}
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

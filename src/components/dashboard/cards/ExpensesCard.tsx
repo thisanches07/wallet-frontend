@@ -1,15 +1,59 @@
+import { useExpenses } from "@/hooks/useApi";
+import { Expense } from "@/types/expense";
+import { convertApiExpenseToExpense } from "@/utils/expenseUtils";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 export default function ExpensesCard() {
+  const { getExpenses } = useExpenses();
   const [isEditing, setIsEditing] = useState(false);
   const [gastos, setGastos] = useState(0);
   const [inputValue, setInputValue] = useState(0);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Carregar despesas da API
+  useEffect(() => {
+    const loadExpenses = async () => {
+      try {
+        const apiExpenses = await getExpenses();
+        if (Array.isArray(apiExpenses)) {
+          const convertedExpenses = apiExpenses.map(convertApiExpenseToExpense);
+          setExpenses(convertedExpenses);
+        } else {
+          setExpenses([]);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar despesas:", err);
+        setExpenses([]);
+      }
+    };
+
+    // Primeira carga
+    loadExpenses();
+
+    // Escutar evento de nova despesa
+    const handleExpenseAdded = () => {
+      loadExpenses(); // Atualiza as despesas
+    };
+
+    window.addEventListener("expenseAdded", handleExpenseAdded);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("expenseAdded", handleExpenseAdded);
+    };
+  }, [getExpenses]);
 
   // Simulação de comparação mensal
   const previousGastos = 3200; // Mock do mês anterior
-  const change = gastos - previousGastos;
+
+  const totalExpenses = expenses.reduce(
+    (acc, expense) => acc + Number(expense.valor),
+    0
+  );
+
+  const change = totalExpenses - previousGastos;
   const changePercentage =
     previousGastos > 0 ? (change / previousGastos) * 100 : 0;
   const isIncreasing = change > 0; // Para gastos, aumento é negativo
@@ -65,7 +109,7 @@ export default function ExpensesCard() {
               <>
                 <p className="text-2xl font-bold text-danger-600 tracking-tight">
                   R${" "}
-                  {gastos.toLocaleString("pt-BR", {
+                  {totalExpenses.toLocaleString("pt-BR", {
                     minimumFractionDigits: 2,
                   })}
                 </p>

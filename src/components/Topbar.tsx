@@ -6,7 +6,6 @@ import {
   Menu,
   PieChart,
   Settings,
-  Shield,
   TrendingUp,
   User,
   Wallet,
@@ -156,10 +155,6 @@ export function Topbar() {
       <div className="flex items-center gap-4">
         <div className="relative flex items-center justify-center w-11 h-11 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group">
           <Wallet className="w-6 h-6 text-white group-hover:scale-110 transition-transform duration-200" />
-          {/* Indicador de segurança SSL */}
-          <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
-            <Shield className="w-2 h-2 text-white" />
-          </div>
         </div>
         <div className="hidden sm:block">
           <div className="flex items-center gap-3">

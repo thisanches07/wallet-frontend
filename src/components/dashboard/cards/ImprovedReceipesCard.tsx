@@ -1,45 +1,62 @@
+import { useIncomes } from "@/hooks/useApi";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 interface IncomeData {
   tipo: "recorrente" | "pontual";
   descricao: string;
-  valor: number;
+  amount: number;
   categoria: "salario" | "freelance" | "investimento" | "bonus" | "outros";
 }
 
 export default function ImprovedReceipesCard() {
+  const { getIncomes } = useIncomes();
+
   const [isEditing, setIsEditing] = useState(false);
   const [totalReceitas, setTotalReceitas] = useState(0);
   const [inputValue, setInputValue] = useState(0);
   const [receitas, setReceitas] = useState<IncomeData[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Simulação de comparação mensal
   const previousReceitas = 4500;
   const change = totalReceitas - previousReceitas;
   const changePercentage =
     previousReceitas > 0 ? (change / previousReceitas) * 100 : 0;
   const isGrowing = change > 0;
 
-  // Calcular total das receitas
+  // Carregar receitas da API
+  const loadReceitas = async () => {
+    try {
+      const apiReceitas = await getIncomes();
+      if (Array.isArray(apiReceitas)) {
+        setReceitas(apiReceitas);
+      } else {
+        setReceitas([]);
+      }
+    } catch (err) {
+      console.error("Erro ao carregar receitas:", err);
+      setReceitas([]);
+    }
+  };
+
   useEffect(() => {
-    const total = receitas.reduce((acc, receita) => acc + receita.valor, 0);
+    loadReceitas();
+
+    const handleIncomeAdded = () => {
+      loadReceitas();
+    };
+
+    window.addEventListener("incomeAdded", handleIncomeAdded);
+    return () => {
+      window.removeEventListener("incomeAdded", handleIncomeAdded);
+    };
+  }, [getIncomes]);
+
+  useEffect(() => {
+    const total = receitas.reduce((acc, receita) => acc + +receita.amount, 0);
     setTotalReceitas(total);
     setInputValue(total);
   }, [receitas]);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("receitasDetalhadas");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setReceitas(parsed);
-      } catch (error) {
-        console.error("Erro ao carregar receitas:", error);
-      }
-    }
-  }, []);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -49,13 +66,12 @@ export default function ImprovedReceipesCard() {
   }, [isEditing]);
 
   const saveChanges = () => {
-    // Para edição manual, vamos assumir que é uma receita genérica
     const adjustmentValue = inputValue - totalReceitas;
     if (adjustmentValue !== 0) {
       const adjustment: IncomeData = {
         tipo: "pontual",
         descricao: adjustmentValue > 0 ? "Ajuste Positivo" : "Ajuste Negativo",
-        valor: adjustmentValue,
+        amount: adjustmentValue,
         categoria: "outros",
       };
       const newReceitas = [...receitas, adjustment];
@@ -65,7 +81,6 @@ export default function ImprovedReceipesCard() {
     setIsEditing(false);
   };
 
-  // Separar receitas por tipo
   const receitasRecorrentes = receitas.filter((r) => r.tipo === "recorrente");
   const receitasPontuais = receitas.filter((r) => r.tipo === "pontual");
 
@@ -95,18 +110,15 @@ export default function ImprovedReceipesCard() {
                 className="text-2xl font-bold text-neutral-900 border-2 border-primary-300 rounded-lg px-2 py-1 w-40 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-all"
               />
             ) : (
-              <>
-                <p className="text-2xl font-bold text-success-600 tracking-tight">
-                  R${" "}
-                  {totalReceitas.toLocaleString("pt-BR", {
-                    minimumFractionDigits: 2,
-                  })}
-                </p>
-              </>
+              <p className="text-2xl font-bold text-success-600 tracking-tight">
+                R${" "}
+                {totalReceitas.toLocaleString("pt-BR", {
+                  minimumFractionDigits: 2,
+                })}
+              </p>
             )}
           </div>
 
-          {/* Breakdown das receitas */}
           {receitas.length > 0 && (
             <div className="mt-2 space-y-1">
               {receitasRecorrentes.length > 0 && (
@@ -115,7 +127,7 @@ export default function ImprovedReceipesCard() {
                   <span className="font-medium text-success-700">
                     R${" "}
                     {receitasRecorrentes
-                      .reduce((acc, r) => acc + r.valor, 0)
+                      .reduce((acc, r) => acc + r.amount, 0)
                       .toLocaleString("pt-BR")}
                   </span>
                 </div>
@@ -126,7 +138,7 @@ export default function ImprovedReceipesCard() {
                   <span className="font-medium text-primary-700">
                     R${" "}
                     {receitasPontuais
-                      .reduce((acc, r) => acc + r.valor, 0)
+                      .reduce((acc, r) => acc + r.amount, 0)
                       .toLocaleString("pt-BR")}
                   </span>
                 </div>
@@ -136,7 +148,6 @@ export default function ImprovedReceipesCard() {
 
           <p className="text-xs text-neutral-400 mt-1">Este mês</p>
 
-          {/* Indicador de tendência */}
           {Math.abs(changePercentage) > 0.1 && (
             <div
               className={`flex items-center gap-1 mt-1 ${

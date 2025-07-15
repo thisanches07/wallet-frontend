@@ -1,3 +1,5 @@
+import { useCategories } from "@/context/CategoriesContext";
+import { useExpenses } from "@/hooks/useApi";
 import { Calendar, DollarSign, Receipt, Tag, X } from "lucide-react";
 import { useState } from "react";
 
@@ -6,72 +8,155 @@ interface AddExpenseModalProps {
   onAdd: (expense: ExpenseData) => void;
 }
 
+type ApiExpense = {
+  id: number;
+  description: string;
+  amount: number;
+  date: string;
+  categoryId: number;
+  user: {
+    id: number;
+    firebase_uuid: string;
+    name: string;
+    email: string;
+  };
+  category: {
+    id: number;
+    name: string;
+    type: string;
+  };
+};
+
 interface ExpenseData {
+  id?: string;
   descricao: string;
-  categoria:
-    | "Moradia"
-    | "Transporte"
-    | "Alimentação"
-    | "Lazer"
-    | "Saúde"
-    | "Educação"
-    | "Outros";
+  categoria: string; // ID da categoria
   valor: number;
   data: string;
   tipo: "unico" | "recorrente";
   recorrencia?: "mensal" | "semanal" | "anual";
+  categoriaInfo?: {
+    id: string;
+    name: string;
+    icon?: string;
+    color?: string;
+    type?: string;
+  };
 }
 
-const categorias = [
+// Categorias fallback caso não consiga carregar do backend
+const fallbackCategories = [
   {
-    value: "Moradia",
-    label: "🏠 Moradia",
-    color: "bg-blue-50 text-blue-700 border-blue-200",
+    id: "moradia",
+    name: "Moradia",
+    icon: "🏠",
+    color: "#3B82F6",
+    type: "expense" as const,
   },
   {
-    value: "Transporte",
-    label: "🚗 Transporte",
-    color: "bg-purple-50 text-purple-700 border-purple-200",
+    id: "transporte",
+    name: "Transporte",
+    icon: "🚗",
+    color: "#8B5CF6",
+    type: "expense" as const,
   },
   {
-    value: "Alimentação",
-    label: "🍔 Alimentação",
-    color: "bg-green-50 text-green-700 border-green-200",
+    id: "alimentacao",
+    name: "Alimentação",
+    icon: "🍔",
+    color: "#10B981",
+    type: "expense" as const,
   },
   {
-    value: "Lazer",
-    label: "🎮 Lazer",
-    color: "bg-pink-50 text-pink-700 border-pink-200",
+    id: "lazer",
+    name: "Lazer",
+    icon: "🎮",
+    color: "#EC4899",
+    type: "expense" as const,
   },
   {
-    value: "Saúde",
-    label: "⚕️ Saúde",
-    color: "bg-red-50 text-red-700 border-red-200",
+    id: "saude",
+    name: "Saúde",
+    icon: "⚕️",
+    color: "#EF4444",
+    type: "expense" as const,
   },
   {
-    value: "Educação",
-    label: "📚 Educação",
-    color: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    id: "educacao",
+    name: "Educação",
+    icon: "📚",
+    color: "#6366F1",
+    type: "expense" as const,
   },
   {
-    value: "Outros",
-    label: "📝 Outros",
-    color: "bg-gray-50 text-gray-700 border-gray-200",
+    id: "outros",
+    name: "Outros",
+    icon: "📝",
+    color: "#6B7280",
+    type: "expense" as const,
   },
 ];
 
 export function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
+  const { createExpense } = useExpenses();
+  const {
+    getExpenseCategories,
+    loading: categoriesLoading,
+    error: categoriesError,
+    getCategoryById,
+  } = useCategories();
+  const apiCategories = getExpenseCategories();
+
+  // Usar categorias da API ou fallback
+  const categories =
+    apiCategories.length > 0 ? apiCategories : fallbackCategories;
+
   const [formData, setFormData] = useState<ExpenseData>({
     descricao: "",
-    categoria: "Outros",
+    categoria: "", // Inicialmente vazio
     valor: 0,
     data: new Date().toISOString().split("T")[0],
     tipo: "unico",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Helper para obter informações da categoria selecionada
+  const getSelectedCategoryInfo = () => {
+    if (!formData.categoria) return null;
+    return categories.find((cat) => cat.id === formData.categoria) || null;
+  };
+
+  // Função para converter API response para formato interno
+  // API retorna: { id, description, amount, date, categoryId, user, category: { id, name, type } }
+  // Convertemos para: { id, descricao, categoria, valor, data, tipo, categoriaInfo }
+  const convertApiExpenseToExpense = (apiExpense: ApiExpense): ExpenseData => {
+    // Buscar informações adicionais da categoria (ícone e cor) das categorias locais
+    const localCategory = categories.find(
+      (cat) =>
+        cat.name.toLowerCase() === apiExpense.category.name.toLowerCase() ||
+        cat.id === apiExpense.category.id.toString()
+    );
+
+    return {
+      id: apiExpense.id.toString(),
+      descricao: apiExpense.description,
+      categoria: apiExpense.category.name,
+      valor: apiExpense.amount,
+      data: apiExpense.date.split("T")[0], // Converter ISO date para YYYY-MM-DD
+      tipo: "unico",
+      categoriaInfo: {
+        id: apiExpense.category.id.toString(),
+        name: apiExpense.category.name,
+        icon: localCategory?.icon || "📝",
+        color: localCategory?.color || "#6B7280",
+        type: apiExpense.category.type,
+      },
+    };
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validação
@@ -79,6 +164,10 @@ export function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
 
     if (!formData.descricao.trim()) {
       newErrors.descricao = "Descrição é obrigatória";
+    }
+
+    if (!formData.categoria) {
+      newErrors.categoria = "Categoria é obrigatória";
     }
 
     if (!formData.valor || formData.valor <= 0) {
@@ -94,12 +183,60 @@ export function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
       return;
     }
 
-    // Se for recorrente mas não tiver recorrência definida
-    if (formData.tipo === "recorrente" && !formData.recorrencia) {
-      const updatedData = { ...formData, recorrencia: "mensal" as const };
-      onAdd(updatedData);
-    } else {
-      onAdd(formData);
+    setIsSubmitting(true);
+
+    try {
+      // Preparar dados para a API
+      const selectedCategory = getSelectedCategoryInfo();
+      const apiExpenseData = {
+        description: formData.descricao,
+        amount: formData.valor,
+        date: new Date(formData.data).toISOString(),
+        categoryId: selectedCategory?.id
+          ? parseInt(selectedCategory.id)
+          : parseInt(formData.categoria), // Fallback para o ID da categoria
+      };
+
+      // Criar na API
+      const createdExpense = (await createExpense(
+        apiExpenseData
+      )) as ApiExpense;
+
+      // Converter resposta da API para formato interno
+      const newExpense = convertApiExpenseToExpense(createdExpense);
+
+      // Chamar callback para atualizar a lista no componente pai
+      onAdd(newExpense);
+      window.dispatchEvent(
+        new CustomEvent("expenseAdded", { detail: newExpense })
+      );
+
+      // Fechar modal
+      onClose();
+    } catch (error) {
+      console.error("Erro ao criar despesa:", error);
+
+      // Em caso de erro, criar localmente como fallback
+      const selectedCategory = getSelectedCategoryInfo();
+      const fallbackExpense: ExpenseData = {
+        id: Date.now().toString(),
+        descricao: formData.descricao,
+        categoria: selectedCategory?.name || formData.categoria,
+        valor: formData.valor,
+        data: formData.data,
+        tipo: formData.tipo,
+        recorrencia: formData.recorrencia,
+        ...(selectedCategory && { categoriaInfo: selectedCategory }),
+      };
+
+      onAdd(fallbackExpense);
+      window.dispatchEvent(
+        new CustomEvent("expenseAdded", { detail: fallbackExpense })
+      );
+
+      onClose();
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -122,7 +259,7 @@ export function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
       }}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden animate-scale-in"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden animate-scale-in flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -150,189 +287,204 @@ export function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
           </div>
         </div>
 
-        {/* Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-120px)]"
-        >
-          {/* Descrição */}
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-              <Tag className="w-4 h-4" />
-              Descrição
-            </label>
-            <input
-              type="text"
-              value={formData.descricao}
-              onChange={(e) => handleInputChange("descricao", e.target.value)}
-              placeholder="Ex: Aluguel, Supermercado, Gasolina..."
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors ${
-                errors.descricao
-                  ? "border-red-500 bg-red-50"
-                  : "border-gray-300"
-              }`}
-            />
-            {errors.descricao && (
-              <p className="text-red-500 text-xs">{errors.descricao}</p>
-            )}
-          </div>
-
-          {/* Categoria */}
-          <div className="space-y-3">
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-              <Tag className="w-4 h-4" />
-              Categoria
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {categorias.map((categoria) => (
-                <button
-                  key={categoria.value}
-                  type="button"
-                  onClick={() =>
-                    handleInputChange("categoria", categoria.value)
-                  }
-                  className={`p-3 text-xs font-medium border rounded-xl transition-all ${
-                    formData.categoria === categoria.value
-                      ? categoria.color + " ring-2 ring-offset-2 ring-current"
-                      : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
-                  }`}
-                >
-                  {categoria.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Valor e Data */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Form - scrollable content */}
+        <div className="flex-1 overflow-y-auto">
+          <form
+            onSubmit={handleSubmit}
+            id="expense-form"
+            className="p-6 space-y-6"
+          >
+            {/* Descrição */}
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                <DollarSign className="w-4 h-4" />
-                Valor
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                  R$
-                </span>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  value={formData.valor > 0 ? formData.valor : ""}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    const numValue = value === "" ? 0 : parseFloat(value);
-                    handleInputChange("valor", numValue);
-                  }}
-                  placeholder="0,00"
-                  className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors ${
-                    errors.valor
-                      ? "border-red-500 bg-red-50"
-                      : "border-gray-300"
-                  }`}
-                />
-              </div>
-              {errors.valor && (
-                <p className="text-red-500 text-xs">{errors.valor}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                <Calendar className="w-4 h-4" />
-                Data
+                <Tag className="w-4 h-4" />
+                Descrição
               </label>
               <input
-                type="date"
-                value={formData.data}
-                onChange={(e) => handleInputChange("data", e.target.value)}
+                type="text"
+                value={formData.descricao}
+                onChange={(e) => handleInputChange("descricao", e.target.value)}
+                placeholder="Ex: Aluguel, Supermercado, Gasolina..."
                 className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors ${
-                  errors.data ? "border-red-500 bg-red-50" : "border-gray-300"
+                  errors.descricao
+                    ? "border-red-500 bg-red-50"
+                    : "border-gray-300"
                 }`}
               />
-              {errors.data && (
-                <p className="text-red-500 text-xs">{errors.data}</p>
+              {errors.descricao && (
+                <p className="text-red-500 text-xs">{errors.descricao}</p>
               )}
             </div>
-          </div>
 
-          {/* Tipo de Gasto */}
-          <div className="space-y-3">
-            <label className="text-sm font-medium text-gray-700">
-              Tipo de Gasto
-            </label>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => handleInputChange("tipo", "unico")}
-                className={`flex-1 p-3 text-sm font-medium border rounded-xl transition-all ${
-                  formData.tipo === "unico"
-                    ? "bg-blue-50 text-blue-700 border-blue-300 ring-2 ring-blue-500 ring-opacity-20"
-                    : "bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100"
-                }`}
-              >
-                💸 Gasto Único
-              </button>
-              <button
-                type="button"
-                onClick={() => handleInputChange("tipo", "recorrente")}
-                className={`flex-1 p-3 text-sm font-medium border rounded-xl transition-all ${
-                  formData.tipo === "recorrente"
-                    ? "bg-orange-50 text-orange-700 border-orange-300 ring-2 ring-orange-500 ring-opacity-20"
-                    : "bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100"
-                }`}
-              >
-                🔄 Recorrente
-              </button>
-            </div>
-          </div>
-
-          {/* Recorrência - só aparece se for recorrente */}
-          {formData.tipo === "recorrente" && (
+            {/* Categoria */}
             <div className="space-y-3">
-              <label className="text-sm font-medium text-gray-700">
-                Frequência
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <Tag className="w-4 h-4" />
+                Categoria
+                {categoriesLoading && (
+                  <span className="inline-flex items-center gap-1 text-xs text-blue-600">
+                    <div className="w-3 h-3 border border-blue-300 border-t-blue-600 rounded-full animate-spin"></div>
+                    Carregando...
+                  </span>
+                )}
+                {!categoriesLoading && apiCategories.length > 0 && (
+                  <span className="text-xs text-green-600">
+                    ✓ {apiCategories.length} categorias
+                  </span>
+                )}
+                {!categoriesLoading && apiCategories.length === 0 && (
+                  <span className="text-xs text-amber-600">
+                    ⚠️ Modo offline
+                  </span>
+                )}
               </label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { value: "semanal", label: "Semanal" },
-                  { value: "mensal", label: "Mensal" },
-                  { value: "anual", label: "Anual" },
-                ].map((freq) => (
+              <div
+                className={`grid grid-cols-2 gap-2 ${
+                  errors.categoria
+                    ? "ring-2 ring-red-500 ring-opacity-20 rounded-xl p-2"
+                    : ""
+                }`}
+              >
+                {categories.map((category) => (
                   <button
-                    key={freq.value}
+                    key={category.id}
                     type="button"
-                    onClick={() => handleInputChange("recorrencia", freq.value)}
-                    className={`p-2 text-xs font-medium border rounded-lg transition-all ${
-                      formData.recorrencia === freq.value
-                        ? "bg-orange-50 text-orange-700 border-orange-300"
-                        : "bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100"
+                    onClick={() => handleInputChange("categoria", category.id)}
+                    className={`p-3 text-xs font-medium border rounded-xl transition-all ${
+                      formData.categoria === category.id
+                        ? "bg-blue-50 text-blue-700 border-blue-300 ring-2 ring-blue-500 ring-opacity-20"
+                        : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
                     }`}
+                    disabled={categoriesLoading}
                   >
-                    {freq.label}
+                    {category.icon} {category.name}
                   </button>
                 ))}
               </div>
+              {errors.categoria && (
+                <p className="text-red-500 text-xs">{errors.categoria}</p>
+              )}
+              {!categoriesLoading && apiCategories.length === 0 && (
+                <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-2">
+                  ⚠️ Não foi possível carregar as categorias do servidor. Usando
+                  categorias padrão.
+                </p>
+              )}
             </div>
-          )}
 
-          {/* Buttons */}
-          <div className="flex gap-3 pt-4 border-t">
+            {/* Valor e Data */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                  <DollarSign className="w-4 h-4" />
+                  Valor
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                    R$
+                  </span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={formData.valor > 0 ? formData.valor : ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const numValue = value === "" ? 0 : parseFloat(value);
+                      handleInputChange("valor", numValue);
+                    }}
+                    placeholder="0,00"
+                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors ${
+                      errors.valor
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-300"
+                    }`}
+                  />
+                </div>
+                {errors.valor && (
+                  <p className="text-red-500 text-xs">{errors.valor}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                  <Calendar className="w-4 h-4" />
+                  Data
+                </label>
+                <input
+                  type="date"
+                  value={formData.data}
+                  onChange={(e) => handleInputChange("data", e.target.value)}
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors ${
+                    errors.data ? "border-red-500 bg-red-50" : "border-gray-300"
+                  }`}
+                />
+                {errors.data && (
+                  <p className="text-red-500 text-xs">{errors.data}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Tipo de Gasto */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-gray-700">
+                Tipo de Gasto
+              </label>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleInputChange("tipo", "unico")}
+                  className={`flex-1 p-3 text-sm font-medium border rounded-xl transition-all ${
+                    formData.tipo === "unico"
+                      ? "bg-blue-50 text-blue-700 border-blue-300 ring-2 ring-blue-500 ring-opacity-20"
+                      : "bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100"
+                  }`}
+                >
+                  💸 Gasto Único
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleInputChange("tipo", "recorrente")}
+                  className={`flex-1 p-3 text-sm font-medium border rounded-xl transition-all ${
+                    formData.tipo === "recorrente"
+                      ? "bg-orange-50 text-orange-700 border-orange-300 ring-2 ring-orange-500 ring-opacity-20"
+                      : "bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100"
+                  }`}
+                >
+                  🔄 Recorrente
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        {/* Fixed Buttons - outside the scrollable area */}
+        <div className="border-t bg-gray-50 p-4">
+          <div className="flex gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors"
+              className="flex-1 px-6 py-4 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-2xl font-medium transition-colors text-lg"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-3 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white rounded-xl font-medium transition-all shadow-lg hover:shadow-xl"
+              form="expense-form"
+              disabled={isSubmitting || categoriesLoading}
+              className="flex-1 px-6 py-4 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white rounded-2xl font-medium transition-all shadow-lg hover:shadow-xl text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Adicionar Gasto
+              {isSubmitting ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Salvando...
+                </>
+              ) : (
+                "Adicionar Gasto"
+              )}
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

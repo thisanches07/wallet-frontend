@@ -1,4 +1,7 @@
 import { InitialSetupModal } from "@/components/dashboard/modals/InitialSetupModal";
+import { useExpenses } from "@/hooks/useApi";
+import { Expense } from "@/types/expense";
+import { convertApiExpenseToExpense } from "@/utils/expenseUtils";
 import {
   Calendar,
   DollarSign,
@@ -23,6 +26,46 @@ interface ProgressoMensal {
 }
 
 export function MonthlyPlanningCard() {
+  const { getExpenses } = useExpenses();
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+
+  useEffect(() => {
+    const loadExpenses = async () => {
+      try {
+        const apiExpenses = await getExpenses();
+        if (Array.isArray(apiExpenses)) {
+          const convertedExpenses = apiExpenses.map(convertApiExpenseToExpense);
+          setExpenses(convertedExpenses);
+        } else {
+          setExpenses([]);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar despesas:", err);
+        setExpenses([]);
+      }
+    };
+
+    // Primeira carga
+    loadExpenses();
+
+    // Escutar evento de nova despesa
+    const handleExpenseAdded = () => {
+      loadExpenses(); // Atualiza as despesas
+    };
+
+    window.addEventListener("expenseAdded", handleExpenseAdded);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("expenseAdded", handleExpenseAdded);
+    };
+  }, [getExpenses]);
+
+  const totalExpenses = expenses.reduce(
+    (acc, expense) => acc + Number(expense.valor),
+    0
+  );
+
   const [planejamento, setPlanejamento] = useState<PlanejamentoData>({
     rendaTotal: 0,
     metaInvestimento: 0,
@@ -31,7 +74,7 @@ export function MonthlyPlanningCard() {
   });
 
   const [progresso, setProgresso] = useState<ProgressoMensal>({
-    gastosRealizados: 0,
+    gastosRealizados: totalExpenses,
     investimentosRealizados: 0,
     diasRestantes: 0,
   });
@@ -212,7 +255,7 @@ export function MonthlyPlanningCard() {
 
           <div className="flex items-center justify-between text-sm">
             <span className="text-neutral-500">
-              R$ {progresso.gastosRealizados.toLocaleString("pt-BR")} de R${" "}
+              R$ {totalExpenses.toLocaleString("pt-BR")} de R${" "}
               {planejamento.limitesGastos.toLocaleString("pt-BR")}
             </span>
             <span

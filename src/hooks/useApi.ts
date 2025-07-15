@@ -1,0 +1,137 @@
+// src/hooks/useApi.ts
+import { authService } from "@/services/authService";
+import { useCallback, useMemo } from "react";
+import { useAuth } from "./useAuth";
+
+export function useApi() {
+  const { logout } = useAuth();
+
+  const apiCall = useCallback(
+    async <T>(endpoint: string, options: RequestInit = {}) => {
+      const response = await authService.apiCall<T>(endpoint, options);
+
+      // Se retornar erro de autenticação, fazer logout automático
+      if (!response.success && response.error?.includes("Unauthorized")) {
+        logout();
+        throw new Error("Sessão expirada. Faça login novamente.");
+      }
+
+      if (!response.success) {
+        throw new Error(response.error || "Erro na requisição");
+      }
+
+      return response.data;
+    },
+    [logout]
+  );
+
+  // Métodos específicos para sua API
+  const api = useMemo(
+    () => ({
+      // Usuário
+      getUserProfile: () => apiCall("/api/users/me"),
+      updateUserProfile: (data: any) =>
+        apiCall("/api/users/me", {
+          method: "PUT",
+          body: JSON.stringify(data),
+        }),
+
+      // Transações
+      getTransactions: () => apiCall("/api/transactions"),
+      getExpenses: () => apiCall("/api/expenses"),
+      createExpense: (expense: any) =>
+        apiCall("/api/expenses", {
+          method: "POST",
+          body: JSON.stringify(expense),
+        }),
+      createTransaction: (transaction: any) =>
+        apiCall("/api/transactions", {
+          method: "POST",
+          body: JSON.stringify(transaction),
+        }),
+      updateTransaction: (id: string, transaction: any) =>
+        apiCall(`/api/transactions/${id}`, {
+          method: "PUT",
+          body: JSON.stringify(transaction),
+        }),
+      deleteTransaction: (id: string) =>
+        apiCall(`/api/transactions/${id}`, {
+          method: "DELETE",
+        }),
+
+      // Receitas/Incomes
+      getIncomes: () => apiCall("/api/incomes"),
+      createIncome: (income: any) =>
+        apiCall("/api/incomes", {
+          method: "POST",
+          body: JSON.stringify(income),
+        }),
+
+      // Categorias
+      getCategories: () => apiCall("/api/categories"),
+
+      // Relatórios
+      getReports: (params?: any) => {
+        const query = params
+          ? `?${new URLSearchParams(params).toString()}`
+          : "";
+        return apiCall(`/api/reports${query}`);
+      },
+
+      // Metas
+      getGoals: () => apiCall("/api/goals"),
+      createGoal: (goal: any) =>
+        apiCall("/api/goals", {
+          method: "POST",
+          body: JSON.stringify(goal),
+        }),
+    }),
+    [apiCall]
+  );
+
+  return api;
+}
+
+// Hook para usar em componentes específicos
+export function useTransactions() {
+  const api = useApi();
+
+  return {
+    getTransactions: api.getTransactions,
+    createTransaction: api.createTransaction,
+    updateTransaction: api.updateTransaction,
+    deleteTransaction: api.deleteTransaction,
+  };
+}
+
+export function useExpenses() {
+  const api = useApi();
+
+  return useMemo(
+    () => ({
+      getExpenses: api.getExpenses,
+      createExpense: api.createExpense,
+    }),
+    [api]
+  );
+}
+
+export function useIncomes() {
+  const api = useApi();
+
+  return useMemo(
+    () => ({
+      getIncomes: api.getIncomes,
+      createIncome: api.createIncome,
+    }),
+    [api]
+  );
+}
+
+export function useReports() {
+  const api = useApi();
+
+  return {
+    getReports: api.getReports,
+  };
+}

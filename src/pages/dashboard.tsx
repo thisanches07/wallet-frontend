@@ -167,6 +167,9 @@ export default function DashboardPage() {
 
       {/* Notification Center */}
       <NotificationCenter />
+
+      {/* Componente de Debug - Apenas para Desenvolvimento */}
+      {/* <AuthDebug /> */}
     </div>
   );
 }
