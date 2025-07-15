@@ -1,3 +1,4 @@
+import { useMonthlyData } from "@/context/MonthlyDataContext";
 import { AlertTriangle, CheckCircle, Info, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -13,18 +14,73 @@ interface Notification {
 export function NotificationCenter() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isVisible, setIsVisible] = useState(false);
+  
+  // Obter dados reais do mês atual
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  const { expenses, incomes, loading } = useMonthlyData(currentMonth, currentYear);
 
   useEffect(() => {
-    checkFinancialAlerts();
-    // Atualizar notificações a cada 10 minutos
-    const interval = setInterval(checkFinancialAlerts, 10 * 60 * 1000);
+    // Só verificar alertas quando os dados estiverem carregados
+    if (!loading) {
+      checkFinancialAlerts();
+    }
+  }, [expenses, incomes, loading]); // Atualizar quando os dados mudarem
+
+  useEffect(() => {
+    // Verificar alertas periodicamente (a cada 10 minutos)
+    const interval = setInterval(() => {
+      if (!loading) {
+        checkFinancialAlerts();
+      }
+    }, 10 * 60 * 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [loading]);
+
+  useEffect(() => {
+    // Escutar eventos de novos expenses/incomes para atualizar notificações
+    const handleNewTransaction = () => {
+      if (!loading) {
+        // Aguardar um pouco para garantir que os dados foram atualizados
+        setTimeout(() => {
+          checkFinancialAlerts();
+        }, 500);
+      }
+    };
+
+    window.addEventListener("expenseAdded", handleNewTransaction);
+    window.addEventListener("incomeAdded", handleNewTransaction);
+
+    return () => {
+      window.removeEventListener("expenseAdded", handleNewTransaction);
+      window.removeEventListener("incomeAdded", handleNewTransaction);
+    };
+  }, [loading]);
 
   const checkFinancialAlerts = () => {
     const now = new Date();
     const dayOfMonth = now.getDate();
     const newNotifications: Notification[] = [];
+
+    // Calcular gastos reais do mês atual
+    const gastosReais = expenses.reduce(
+      (acc, expense) => acc + Number(expense.valor),
+      0
+    );
+
+    // Calcular receitas reais do mês atual
+    const receitasReais = incomes.reduce(
+      (acc, income) => acc + Number(income.amount),
+      0
+    );
+
+    console.log('📊 Dados financeiros do mês:', {
+      gastos: gastosReais,
+      receitas: receitasReais,
+      despesas: expenses.length,
+      rendas: incomes.length
+    });
 
     // Verificar configuração inicial
     const planejamento = localStorage.getItem("planejamentoFinanceiro");
@@ -40,32 +96,54 @@ export function NotificationCenter() {
       });
     } else {
       const data = JSON.parse(planejamento);
-      const gastos = parseFloat(localStorage.getItem("gastosTotal") || "0");
 
-      // Verificar se ultrapassou o orçamento
-      if (gastos > data.limitesGastos) {
-        const excesso = gastos - data.limitesGastos;
+      // Verificar se ultrapassou o orçamento usando dados reais
+      if (gastosReais > data.limitesGastos) {
+        console.log(
+          "gastos reais ->",
+          gastosReais,
+          "limitesGastos ->",
+          data.limitesGastos
+        );
+        const excesso = gastosReais - data.limitesGastos;
         newNotifications.push({
           id: "budget-exceeded",
           type: "warning",
           title: "Orçamento ultrapassado",
           message: `Você gastou R$ ${excesso.toLocaleString(
-            "pt-BR"
+            "pt-BR",
+            { minimumFractionDigits: 2 }
           )} acima do planejado este mês`,
           timestamp: now,
         });
       }
 
-      // Verificar se está próximo do limite (90%)
-      else if (gastos > data.limitesGastos * 0.9) {
-        const restante = data.limitesGastos - gastos;
+      // Verificar se está próximo do limite (90%) usando dados reais
+      else if (gastosReais > data.limitesGastos * 0.9) {
+        const restante = data.limitesGastos - gastosReais;
         newNotifications.push({
           id: "budget-warning",
           type: "warning",
           title: "Atenção ao orçamento",
           message: `Restam apenas R$ ${restante.toLocaleString(
-            "pt-BR"
+            "pt-BR",
+            { minimumFractionDigits: 2 }
           )} do seu orçamento mensal`,
+          timestamp: now,
+        });
+      }
+
+      // Verificar se há saldo positivo significativo
+      const saldoMensal = receitasReais - gastosReais;
+      if (saldoMensal > 0 && gastosReais < data.limitesGastos * 0.7) {
+        newNotifications.push({
+          id: "good-savings",
+          type: "success",
+          title: "Parabéns! Economia no mês",
+          message: `Você economizou R$ ${saldoMensal.toLocaleString(
+            "pt-BR",
+            { minimumFractionDigits: 2 }
+          )} este mês`,
           timestamp: now,
         });
       }
@@ -77,7 +155,8 @@ export function NotificationCenter() {
           type: "info",
           title: "Lembrete de investimento",
           message: `Não se esqueça de investir R$ ${data.metaInvestimento.toLocaleString(
-            "pt-BR"
+            "pt-BR",
+            { minimumFractionDigits: 2 }
           )} este mês`,
           timestamp: now,
         });

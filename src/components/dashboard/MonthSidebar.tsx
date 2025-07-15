@@ -39,7 +39,7 @@ export function MonthSidebar({ selected, onSelect }: Props) {
     "Dez",
   ];
 
-  // Mock data mais realista com variações
+  // Mock data
   const monthlyPerformance = [
     { income: 4500, expenses: 3200, goal: 4000 },
     { income: 4800, expenses: 3400, goal: 4200 },
@@ -50,9 +50,15 @@ export function MonthSidebar({ selected, onSelect }: Props) {
     { income: 5300, expenses: 4100, goal: 4700 },
   ];
 
+  const monthsToDisplay = months.slice(0, currentMonth).reverse();
+  console.log("meses a serem exibidos ->", monthsToDisplay);
+  const performanceToDisplay = monthlyPerformance
+    .slice(0, currentMonth)
+    .reverse();
+
   return (
     <aside className="w-64 bg-white/80 backdrop-blur-sm border-r border-neutral-200/50 h-full shadow-lg">
-      {/* Header compacto */}
+      {/* Header */}
       <div className="p-4 border-b border-neutral-100">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
@@ -65,7 +71,7 @@ export function MonthSidebar({ selected, onSelect }: Props) {
         </div>
       </div>
 
-      {/* Mês Atual - Destaque principal */}
+      {/* Mês Atual */}
       <div className="p-4 bg-gradient-to-br from-primary-50 to-blue-50 border-b border-primary-100">
         <button
           onClick={() => onSelect(currentMonth)}
@@ -151,23 +157,25 @@ export function MonthSidebar({ selected, onSelect }: Props) {
         </button>
       </div>
 
-      {/* Lista compacta de meses */}
+      {/* Lista de meses (invertida) */}
       <div className="flex-1 overflow-y-auto p-3">
         <div className="space-y-1">
-          {months.slice(0, currentMonth + 1).map((month, index) => {
-            const performance = monthlyPerformance[index] || {
+          {monthsToDisplay.map((month, index) => {
+            console.log("mes ->", month, "index ->", index);
+            const realIndex = currentMonth - (index + 1);
+            const performance = performanceToDisplay[index] || {
               income: 0,
               expenses: 0,
             };
             const balance = performance.income - performance.expenses;
             const isPositive = balance >= 0;
-            const isSelected = selected === index;
-            const isCurrentMonth = index === currentMonth;
+            const isSelected = selected === realIndex;
+            const isCurrentMonth = realIndex === currentMonth;
 
             return (
               <button
                 key={month}
-                onClick={() => onSelect(index)}
+                onClick={() => onSelect(realIndex)}
                 className={`w-full p-3 rounded-lg transition-all duration-200 text-left border ${
                   isSelected
                     ? "bg-primary-50 border-primary-200 shadow-sm"
@@ -187,15 +195,14 @@ export function MonthSidebar({ selected, onSelect }: Props) {
                           : "bg-neutral-100 text-neutral-600"
                       }`}
                     >
-                      {monthsShort[index]}
+                      {monthsShort[realIndex]}
                     </span>
-                    {isCurrentMonth && (
+                    {isCurrentMonth ? (
                       <div className="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full text-xs font-semibold">
                         <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
                         Atual
                       </div>
-                    )}
-                    {!isCurrentMonth && (
+                    ) : (
                       <CheckCircle className="w-3 h-3 text-emerald-500" />
                     )}
                   </div>
@@ -214,7 +221,7 @@ export function MonthSidebar({ selected, onSelect }: Props) {
         </div>
       </div>
 
-      {/* Footer - Progresso anual compacto */}
+      {/* Rodapé */}
       <div className="p-3 border-t border-neutral-100">
         <div className="bg-neutral-50 rounded-lg p-3">
           <div className="flex items-center justify-between mb-2">
