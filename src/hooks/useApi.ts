@@ -60,6 +60,15 @@ export function useApi() {
           method: "POST",
           body: JSON.stringify(expense),
         }),
+      deleteExpense: (expenseOrId: any) => {
+        const id =
+          typeof expenseOrId === "string"
+            ? expenseOrId
+            : expenseOrId?.id || expenseOrId?._id;
+        return apiCall(`/api/expenses/${id}`, {
+          method: "DELETE",
+        });
+      },
       createTransaction: (transaction: any) =>
         apiCall("/api/transactions", {
           method: "POST",
@@ -90,7 +99,15 @@ export function useApi() {
           method: "POST",
           body: JSON.stringify(income),
         }),
-
+      deleteIncome: (incomeOrId: any) => {
+        const id =
+          typeof incomeOrId === "string"
+            ? incomeOrId
+            : incomeOrId?.id || incomeOrId?._id;
+        return apiCall(`/api/incomes/${id}`, {
+          method: "DELETE",
+        });
+      },
       // Categorias
       getCategories: () => apiCall("/api/categories"),
 
@@ -136,6 +153,7 @@ export function useExpenses() {
       getExpenses: (filters?: { month?: number; year?: number }) =>
         api.getExpenses(filters),
       createExpense: api.createExpense,
+      deleteExpense: api.deleteExpense,
     }),
     [api]
   );
@@ -149,6 +167,7 @@ export function useIncomes() {
       getIncomes: (filters?: { month?: number; year?: number }) =>
         api.getIncomes(filters),
       createIncome: api.createIncome,
+      deleteIncome: api.deleteIncome,
     }),
     [api]
   );

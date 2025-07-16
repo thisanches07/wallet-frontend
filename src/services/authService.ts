@@ -90,12 +90,26 @@ class AuthService {
         headers,
       });
 
-      const { data } = await response.json();
+      // Para respostas 204 (No Content), não há JSON para fazer parse
+      let data = null;
+      if (
+        response.status !== 204 &&
+        response.headers.get("content-length") !== "0"
+      ) {
+        try {
+          const result = await response.json();
+          data = result.data || result;
+        } catch (jsonError) {
+          // Se falhar ao fazer parse do JSON, continua com data = null
+          data = null;
+        }
+      }
 
       if (!response.ok) {
         return {
           success: false,
-          error: data.message || "Request failed",
+          error:
+            data?.message || `Request failed with status ${response.status}`,
         };
       }
 
