@@ -60,11 +60,7 @@ export function useApi() {
           method: "POST",
           body: JSON.stringify(expense),
         }),
-      deleteExpense: (expenseOrId: any) => {
-        const id =
-          typeof expenseOrId === "string"
-            ? expenseOrId
-            : expenseOrId?.id || expenseOrId?._id;
+      deleteExpense: (id: number) => {
         return apiCall(`/api/expenses/${id}`, {
           method: "DELETE",
         });
@@ -99,11 +95,7 @@ export function useApi() {
           method: "POST",
           body: JSON.stringify(income),
         }),
-      deleteIncome: (incomeOrId: any) => {
-        const id =
-          typeof incomeOrId === "string"
-            ? incomeOrId
-            : incomeOrId?.id || incomeOrId?._id;
+      deleteIncome: (id: number) => {
         return apiCall(`/api/incomes/${id}`, {
           method: "DELETE",
         });

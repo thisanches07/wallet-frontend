@@ -16,14 +16,12 @@ export default function IncomesListModal({
   const { deleteIncome } = useIncomes();
   const { selectedMonth, selectedYear } = useSelectedMonth();
   const { incomes, refresh } = useMonthlyData(selectedMonth, selectedYear);
-  const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
-  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
-  const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set());
+  const [deletedIds, setDeletedIds] = useState<Set<number>>(new Set());
+  const [animatingIds, setAnimatingIds] = useState<Set<number>>(new Set());
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   // Filtrar receitas excluindo as que foram deletadas
-  const visibleIncomes = incomes.filter(
-    (income) => !deletedIds.has(income.id || "")
-  );
+  const visibleIncomes = incomes.filter((income) => !deletedIds.has(income.id));
 
   // Resetar lista de deletados quando modal fechar
   const handleClose = () => {
@@ -32,12 +30,11 @@ export default function IncomesListModal({
     onClose();
   };
 
-  const handleDelete = async (income: any, index: number) => {
-    setDeletingIndex(index);
+  const handleDelete = async (incomeId: number) => {
+    if (!incomeId) return;
 
+    setDeletingId(incomeId);
     try {
-      const incomeId = income.id || "";
-
       // Iniciar animação de fade-out
       setAnimatingIds((prev) => new Set(prev).add(incomeId));
 
@@ -47,7 +44,7 @@ export default function IncomesListModal({
       }, 300); // Duração da animação
 
       // Fazer o delete na API
-      await deleteIncome(income);
+      await deleteIncome(incomeId);
 
       // Disparar evento customizado para atualizar os dados do contexto
       window.dispatchEvent(
@@ -62,7 +59,6 @@ export default function IncomesListModal({
     } catch (error) {
       console.error("Erro ao deletar receita:", error);
       // Em caso de erro, remover da animação e da lista de deletados
-      const incomeId = income.id || "";
       setAnimatingIds((prev) => {
         const newSet = new Set(prev);
         newSet.delete(incomeId);
@@ -74,7 +70,7 @@ export default function IncomesListModal({
         return newSet;
       });
     } finally {
-      setDeletingIndex(null);
+      setDeletingId(null);
     }
   };
 
@@ -143,11 +139,11 @@ export default function IncomesListModal({
             </div>
           ) : (
             <div className="space-y-3">
-              {visibleIncomes.map((income, index) => (
+              {visibleIncomes.map((income) => (
                 <div
-                  key={`income-${index}`}
+                  key={income.id}
                   className={`flex items-center justify-between p-4 bg-neutral-50 rounded-xl transition-all duration-300 ease-in-out overflow-hidden ${
-                    animatingIds.has(income.id || "")
+                    animatingIds.has(income.id)
                       ? "opacity-0 transform scale-95 translate-x-4 max-h-0 py-0 mb-0"
                       : "opacity-100 transform scale-100 translate-x-0 max-h-96 hover:bg-neutral-100"
                   }`}
@@ -194,12 +190,12 @@ export default function IncomesListModal({
                     </span>
 
                     <button
-                      onClick={() => handleDelete(income, index)}
-                      disabled={deletingIndex === index}
+                      onClick={() => handleDelete(income.id)}
+                      disabled={deletingId === income.id}
                       className="p-2 hover:bg-danger-50 rounded-lg transition-colors group disabled:opacity-50"
                       title="Excluir receita"
                     >
-                      {deletingIndex === index ? (
+                      {deletingId === income.id ? (
                         <div className="w-4 h-4 border-2 border-danger-600 border-t-transparent rounded-full animate-spin" />
                       ) : (
                         <Trash2

@@ -13,7 +13,7 @@ import {
 import { useApi } from "../hooks/useApi";
 
 interface IncomeData {
-  id?: string;
+  id: number;
   tipo: "recorrente" | "pontual";
   descricao: string;
   amount: number;
@@ -331,7 +331,7 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
 
         // Verificar se o expense está no formato correto
         const formattedExpense = {
-          id: expense.id || Date.now().toString(),
+          id: expense.id,
           descricao: expense.descricao,
           categoria: expense.categoria,
           valor: Number(expense.valor),
@@ -389,14 +389,15 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
       console.log(`💵 Income adicionado, atualizando ${month + 1}/${year}`);
 
       // Converter income para o formato esperado pelo contexto
-      const contextIncome = {
+      const contextIncome: IncomeData = {
+        id: parseInt(income.id),
         tipo: income.tipo || "pontual",
         descricao: income.descricao,
-        amount: Number(income.valor),
+        amount: Number(income.valor || income.amount),
         categoria: income.categoria,
       };
 
-      // Ao invés de deletar os dados, adicionar o novo income localmente
+      // Adicionar o novo income aos dados existentes
       setData((prev) => {
         const currentData = prev[key];
         if (!currentData) {
@@ -404,7 +405,6 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
           return prev;
         }
 
-        // Adicionar o novo income aos dados existentes
         return {
           ...prev,
           [key]: {
