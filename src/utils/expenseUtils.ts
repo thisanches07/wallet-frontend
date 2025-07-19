@@ -3,7 +3,7 @@ import { ApiExpense, Expense } from "@/types/expense";
 export const convertApiExpenseToExpense = (
   apiExpense: ApiExpense
 ): Expense => ({
-  id: apiExpense.id.toString(),
+  id: apiExpense.id, // Manter como number
   descricao: apiExpense.description,
   categoria: apiExpense.category.name,
   valor: apiExpense.amount,

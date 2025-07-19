@@ -7,8 +7,15 @@ import IncomesListModal from "../modals/IncomesListModal";
 
 export default function ReceipesCard() {
   const { selectedMonth, selectedYear, isCurrentMonth } = useSelectedMonth();
-  const { incomes, loading: monthlyLoading } = useMonthlyData(selectedMonth, selectedYear);
-  const { getMonthData, getIncomeComparison, loading: summaryLoading } = useSummary();
+  const { incomes, loading: monthlyLoading } = useMonthlyData(
+    selectedMonth,
+    selectedYear
+  );
+  const {
+    getMonthData,
+    getIncomeComparison,
+    loading: summaryLoading,
+  } = useSummary();
 
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState(0);

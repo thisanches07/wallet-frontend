@@ -5,6 +5,7 @@ import { AddExpenseModal } from "../modals/AddExpenseModal";
 import { AddIncomeModal } from "../modals/AddIncomeModal";
 import { AddRecurringExpenseModal } from "../modals/AddRecurringExpenseModal";
 import { RecurringModal } from "../modals/RecurringModal";
+import { ReportsModal } from "../modals/ReportsModal";
 
 export default function QuickActionsCard() {
   const [showIncomeModal, setShowIncomeModal] = useState(false);
@@ -12,6 +13,7 @@ export default function QuickActionsCard() {
     useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showRecurringModal, setShowRecurringModal] = useState(false);
+  const [showReportsModal, setShowReportsModal] = useState(false);
   const router = useRouter();
 
   const actions = [
@@ -37,7 +39,7 @@ export default function QuickActionsCard() {
       icon: PieChart,
       label: "Relatórios",
       color: "bg-warning-50 text-warning-600 hover:bg-warning-100",
-      action: () => console.log("Ver relatórios"),
+      action: () => setShowReportsModal(true),
     },
   ];
 
@@ -117,6 +119,10 @@ export default function QuickActionsCard() {
             setShowRecurringExpenseModal(false);
           }}
         />
+      )}
+
+      {showReportsModal && (
+        <ReportsModal onClose={() => setShowReportsModal(false)} />
       )}
     </>
   );

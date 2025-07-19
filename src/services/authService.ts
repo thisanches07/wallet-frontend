@@ -130,7 +130,14 @@ class AuthService {
     return this.apiCall("/api/users/me");
   }
 
-  async syncUserWithBackend() {
+  async syncUserWithBackend(name?: string) {
+    // Se um nome foi fornecido, enviar no payload para o backend
+    if (name) {
+      return this.apiCall("/api/users/me", {
+        method: "PATCH",
+        body: JSON.stringify({ name }),
+      });
+    }
     return this.apiCall("/api/users/me");
   }
 

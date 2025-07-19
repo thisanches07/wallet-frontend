@@ -1,5 +1,5 @@
 import { InitialSetupModal } from "@/components/dashboard/modals/InitialSetupModal";
-import { useExpenses } from "@/hooks/useApi";
+import { useExpenses, useIncomeAllocation } from "@/hooks/useApi";
 import { Expense } from "@/types/expense";
 import { convertApiExpenseToExpense } from "@/utils/expenseUtils";
 import {
@@ -13,10 +13,16 @@ import {
 import { useEffect, useState } from "react";
 
 interface PlanejamentoData {
-  rendaTotal: number;
-  metaInvestimento: number;
-  limitesGastos: number;
-  reservaLivre: number;
+  totalMonthlyIncome: number;
+  investmentsAmount: number;
+  expensesAmount: number;
+  leisureAmount: number;
+  investmentsPercentage: number;
+  expensesPercentage: number;
+  leisurePercentage: number;
+  // Dados originais opcionais que podem vir da API
+  fixedSalary?: number;
+  extraIncome?: number;
 }
 
 interface ProgressoMensal {
@@ -27,7 +33,14 @@ interface ProgressoMensal {
 
 export function MonthlyPlanningCard() {
   const { getExpenses } = useExpenses();
+  const {
+    getAllocation,
+    createAllocation,
+    updateAllocation,
+    previewAllocation,
+  } = useIncomeAllocation();
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const loadExpenses = async () => {
@@ -67,10 +80,13 @@ export function MonthlyPlanningCard() {
   );
 
   const [planejamento, setPlanejamento] = useState<PlanejamentoData>({
-    rendaTotal: 0,
-    metaInvestimento: 0,
-    limitesGastos: 0,
-    reservaLivre: 0,
+    totalMonthlyIncome: 0,
+    investmentsAmount: 0,
+    expensesAmount: 0,
+    leisureAmount: 0,
+    investmentsPercentage: 0,
+    expensesPercentage: 0,
+    leisurePercentage: 0,
   });
 
   const [progresso, setProgresso] = useState<ProgressoMensal>({
@@ -83,44 +99,49 @@ export function MonthlyPlanningCard() {
   const [isConfigured, setIsConfigured] = useState(false);
 
   useEffect(() => {
-    // Carregar dados do planejamento
-    const savedPlanejamento = localStorage.getItem("planejamentoFinanceiro");
-    if (savedPlanejamento) {
-      const data = JSON.parse(savedPlanejamento);
-      setPlanejamento(data);
-      setIsConfigured(data.rendaTotal > 0);
-    }
+    const loadAllocationData = async () => {
+      try {
+        setLoading(true);
+        const allocationData = (await getAllocation()) as PlanejamentoData;
+        if (allocationData) {
+          setPlanejamento(allocationData);
+          setIsConfigured(allocationData.totalMonthlyIncome > 0);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar alocação:", error);
+        setIsConfigured(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAllocationData();
 
     // Calcular dias restantes no mês
     const today = new Date();
     const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     const diasRestantes = lastDay.getDate() - today.getDate();
 
-    // Carregar gastos realizados
-    const gastosRealizados = parseFloat(
-      localStorage.getItem("gastosTotal") || "0"
-    );
-
-    setProgresso({
-      gastosRealizados,
-      investimentosRealizados: 0,
+    setProgresso((prev) => ({
+      ...prev,
       diasRestantes,
-    });
-  }, []);
+      gastosRealizados: totalExpenses,
+    }));
+  }, [getAllocation, totalExpenses]);
 
   const percentualGastosUsado =
-    planejamento.limitesGastos > 0
-      ? (progresso.gastosRealizados / planejamento.limitesGastos) * 100
+    planejamento.expensesAmount > 0
+      ? (progresso.gastosRealizados / planejamento.expensesAmount) * 100
       : 0;
 
   const percentualInvestimento =
-    planejamento.metaInvestimento > 0
-      ? (progresso.investimentosRealizados / planejamento.metaInvestimento) *
+    planejamento.investmentsAmount > 0
+      ? (progresso.investimentosRealizados / planejamento.investmentsAmount) *
         100
       : 0;
 
   const saldoRestanteGastos =
-    planejamento.limitesGastos - progresso.gastosRealizados;
+    planejamento.expensesAmount - progresso.gastosRealizados;
   const isOverBudget = saldoRestanteGastos < 0;
 
   const mediaGastosDiaria =
@@ -128,27 +149,68 @@ export function MonthlyPlanningCard() {
       ? Math.abs(saldoRestanteGastos) / progresso.diasRestantes
       : 0;
 
-  const handleSetupComplete = (data: any) => {
-    const totalRenda = data.salarioFixo + data.receitasExtras;
-    const valorInvestimento = (totalRenda * data.metaInvestimento) / 100;
-    const valorGastos = (totalRenda * data.percentualGastos) / 100;
-    const valorLivre = totalRenda - valorInvestimento - valorGastos;
+  const handleSetupComplete = async (data: any) => {
+    try {
+      setLoading(true);
 
-    const novoPlanejamento = {
-      rendaTotal: totalRenda,
-      metaInvestimento: valorInvestimento,
-      limitesGastos: valorGastos,
-      reservaLivre: valorLivre,
-    };
+      // Se já existe uma alocação, atualizar; se não, criar
+      const allocationData = isConfigured
+        ? await updateAllocation({
+            fixedSalary: data.salarioFixo,
+            extraIncome: data.receitasExtras,
+            investmentsPercentage: data.metaInvestimento,
+            expensesPercentage: data.percentualGastos,
+          })
+        : await createAllocation({
+            fixedSalary: data.salarioFixo,
+            extraIncome: data.receitasExtras,
+            investmentsPercentage: data.metaInvestimento,
+            expensesPercentage: data.percentualGastos,
+          });
 
-    localStorage.setItem(
-      "planejamentoFinanceiro",
-      JSON.stringify(novoPlanejamento)
-    );
-    setPlanejamento(novoPlanejamento);
-    setIsConfigured(true);
-    setShowSetupModal(false);
+      setPlanejamento(allocationData as PlanejamentoData);
+      setIsConfigured(true);
+      setShowSetupModal(false);
+
+      // Disparar evento para notificar outros componentes sobre a atualização da alocação
+      window.dispatchEvent(
+        new CustomEvent("allocationUpdated", {
+          detail: allocationData,
+        })
+      );
+    } catch (error) {
+      console.error("Erro ao salvar alocação:", error);
+      alert("Erro ao salvar planejamento. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Função para preparar dados iniciais para o modal baseado na alocação atual
+  const getInitialDataForModal = () => {
+    if (!isConfigured || !planejamento.totalMonthlyIncome) return undefined;
+
+    return {
+      salarioFixo: planejamento.fixedSalary || planejamento.totalMonthlyIncome,
+      receitasExtras: planejamento.extraIncome || 0,
+      metaInvestimento: planejamento.investmentsPercentage,
+      percentualGastos: planejamento.expensesPercentage,
+    };
+  };
+
+  // Se estiver carregando, mostra loading
+  if (loading) {
+    return (
+      <div className="bg-white border border-neutral-200/80 p-6 rounded-2xl shadow-sm">
+        <div className="flex items-center justify-center py-8">
+          <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+          <span className="ml-2 text-sm text-gray-600">
+            Carregando planejamento...
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   // Se não estiver configurado, mostra o card de configuração
   if (!isConfigured) {
@@ -178,6 +240,7 @@ export function MonthlyPlanningCard() {
           <InitialSetupModal
             onClose={() => setShowSetupModal(false)}
             onComplete={handleSetupComplete}
+            initialData={getInitialDataForModal()}
           />
         )}
       </>
@@ -221,7 +284,7 @@ export function MonthlyPlanningCard() {
             <DollarSign className="w-4 h-4 text-neutral-500" />
           </div>
           <p className="text-xl font-bold text-neutral-900">
-            R$ {planejamento.rendaTotal.toLocaleString("pt-BR")}
+            R$ {planejamento.totalMonthlyIncome.toLocaleString("pt-BR")}
           </p>
         </div>
 
@@ -256,7 +319,7 @@ export function MonthlyPlanningCard() {
           <div className="flex items-center justify-between text-sm">
             <span className="text-neutral-500">
               R$ {totalExpenses.toLocaleString("pt-BR")} de R${" "}
-              {planejamento.limitesGastos.toLocaleString("pt-BR")}
+              {planejamento.expensesAmount.toLocaleString("pt-BR")}
             </span>
             <span
               className={`font-medium ${
@@ -291,12 +354,12 @@ export function MonthlyPlanningCard() {
           <div className="flex items-center justify-between text-sm">
             <span className="text-neutral-500">
               R$ {progresso.investimentosRealizados.toLocaleString("pt-BR")} de
-              R$ {planejamento.metaInvestimento.toLocaleString("pt-BR")}
+              R$ {planejamento.investmentsAmount.toLocaleString("pt-BR")}
             </span>
             <span className="font-medium text-success-600">
               R${" "}
               {(
-                planejamento.metaInvestimento -
+                planejamento.investmentsAmount -
                 progresso.investimentosRealizados
               ).toLocaleString("pt-BR")}{" "}
               restante
@@ -331,6 +394,7 @@ export function MonthlyPlanningCard() {
         <InitialSetupModal
           onClose={() => setShowSetupModal(false)}
           onComplete={handleSetupComplete}
+          initialData={getInitialDataForModal()}
         />
       )}
     </>

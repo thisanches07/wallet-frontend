@@ -70,60 +70,6 @@ export function ExpensesComparison() {
     loadData();
   }, [getAllocation, getExpenses, selectedMonth, selectedYear]);
 
-  // Escutar mudanças na alocação de renda e despesas
-  useEffect(() => {
-    const handleAllocationUpdate = () => {
-      // Recarregar apenas os dados de alocação quando houver mudança
-      const reloadAllocation = async () => {
-        try {
-          const allocation = (await getAllocation()) as AllocationData;
-          setAllocationData(allocation);
-        } catch (error) {
-          console.error("Erro ao recarregar alocação:", error);
-        }
-      };
-
-      reloadAllocation();
-    };
-
-    const handleExpenseChange = () => {
-      // Recarregar despesas quando houver mudança
-      const reloadExpenses = async () => {
-        try {
-          const monthlyExpenses = await getExpenses({
-            month: selectedMonth + 1,
-            year: selectedYear,
-          });
-
-          if (Array.isArray(monthlyExpenses)) {
-            const convertedExpenses = monthlyExpenses.map(
-              convertApiExpenseToExpense
-            );
-            setExpenses(convertedExpenses);
-          } else {
-            setExpenses([]);
-          }
-        } catch (error) {
-          console.error("Erro ao recarregar despesas:", error);
-        }
-      };
-
-      reloadExpenses();
-    };
-
-    // Escutar eventos de mudança
-    window.addEventListener("allocationUpdated", handleAllocationUpdate);
-    window.addEventListener("expenseAdded", handleExpenseChange);
-    window.addEventListener("expenseDeleted", handleExpenseChange);
-
-    // Cleanup
-    return () => {
-      window.removeEventListener("allocationUpdated", handleAllocationUpdate);
-      window.removeEventListener("expenseAdded", handleExpenseChange);
-      window.removeEventListener("expenseDeleted", handleExpenseChange);
-    };
-  }, [getAllocation, getExpenses, selectedMonth, selectedYear]);
-
   // Processar dados de comparação
   useEffect(() => {
     if (!allocationData) {
@@ -162,11 +108,11 @@ export function ExpensesComparison() {
   }, [allocationData, expenses]);
 
   const totalIndicado = comparisonData.reduce(
-    (acc: number, item: ComparisonData) => acc + (item.indicado || 0),
+    (acc: number, item: ComparisonData) => acc + item.indicado,
     0
   );
   const totalGasto = comparisonData.reduce(
-    (acc: number, item: ComparisonData) => acc + (item.gasto || 0),
+    (acc: number, item: ComparisonData) => acc + item.gasto,
     0
   );
   const totalDiff = totalGasto - totalIndicado;
@@ -299,11 +245,11 @@ export function ExpensesComparison() {
             Principais Categorias
           </h4>
           {comparisonData.map((item) => {
-            const diff = (item.gasto || 0) - (item.indicado || 0);
+            const diff = item.gasto - item.indicado;
             const excedeu = diff > 0;
             const percentage =
-              (item.indicado || 0) > 0
-                ? ((Math.abs(diff) / (item.indicado || 1)) * 100).toFixed(1)
+              item.indicado > 0
+                ? ((Math.abs(diff) / item.indicado) * 100).toFixed(1)
                 : "0";
 
             return (
@@ -317,8 +263,8 @@ export function ExpensesComparison() {
                       {item.category}
                     </h5>
                     <p className="text-xs text-neutral-500">
-                      R$ {(item.gasto || 0).toLocaleString("pt-BR")} / R${" "}
-                      {(item.indicado || 0).toLocaleString("pt-BR")}
+                      R$ {item.gasto.toLocaleString("pt-BR")} / R${" "}
+                      {item.indicado.toLocaleString("pt-BR")}
                     </p>
                   </div>
                 </div>
@@ -371,13 +317,11 @@ export function ExpensesComparison() {
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
               <div className="space-y-4">
                 {comparisonData.map((item) => {
-                  const diff = (item.gasto || 0) - (item.indicado || 0);
+                  const diff = item.gasto - item.indicado;
                   const excedeu = diff > 0;
                   const percentage =
-                    (item.indicado || 0) > 0
-                      ? ((Math.abs(diff) / (item.indicado || 1)) * 100).toFixed(
-                          1
-                        )
+                    item.indicado > 0
+                      ? ((Math.abs(diff) / item.indicado) * 100).toFixed(1)
                       : "0";
 
                   return (
@@ -409,7 +353,7 @@ export function ExpensesComparison() {
                             Orçado
                           </p>
                           <p className="text-lg font-bold text-primary-600">
-                            R$ {(item.indicado || 0).toLocaleString("pt-BR")}
+                            R$ {item.indicado.toLocaleString("pt-BR")}
                           </p>
                         </div>
                         <div>
@@ -417,7 +361,7 @@ export function ExpensesComparison() {
                             Realizado
                           </p>
                           <p className="text-lg font-bold text-neutral-900">
-                            R$ {(item.gasto || 0).toLocaleString("pt-BR")}
+                            R$ {item.gasto.toLocaleString("pt-BR")}
                           </p>
                         </div>
                         <div>
@@ -440,10 +384,9 @@ export function ExpensesComparison() {
                         <div className="flex justify-between text-xs text-neutral-500">
                           <span>Progresso</span>
                           <span>
-                            {(item.indicado || 0) > 0
+                            {item.indicado > 0
                               ? Math.min(
-                                  ((item.gasto || 0) / (item.indicado || 1)) *
-                                    100,
+                                  (item.gasto / item.indicado) * 100,
                                   100
                                 ).toFixed(1)
                               : "0"}
@@ -459,11 +402,9 @@ export function ExpensesComparison() {
                             }`}
                             style={{
                               width: `${
-                                (item.indicado || 0) > 0
+                                item.indicado > 0
                                   ? Math.min(
-                                      ((item.gasto || 0) /
-                                        (item.indicado || 1)) *
-                                        100,
+                                      (item.gasto / item.indicado) * 100,
                                       100
                                     )
                                   : 0

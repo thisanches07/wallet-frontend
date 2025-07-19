@@ -7,8 +7,15 @@ import ExpensesListModal from "../modals/ExpensesListModal";
 
 export default function ExpensesCard() {
   const { selectedMonth, selectedYear, isCurrentMonth } = useSelectedMonth();
-  const { expenses, loading: monthlyLoading } = useMonthlyData(selectedMonth, selectedYear);
-  const { getMonthData, getExpenseComparison, loading: summaryLoading } = useSummary();
+  const { expenses, loading: monthlyLoading } = useMonthlyData(
+    selectedMonth,
+    selectedYear
+  );
+  const {
+    getMonthData,
+    getExpenseComparison,
+    loading: summaryLoading,
+  } = useSummary();
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);

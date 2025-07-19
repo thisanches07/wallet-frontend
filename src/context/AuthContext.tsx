@@ -5,6 +5,7 @@ import {
   signInWithPopup,
   signOut,
 } from "firebase/auth";
+import { useRouter } from "next/router";
 import {
   createContext,
   ReactNode,
@@ -20,7 +21,7 @@ interface AuthContextProps {
   token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, name: string) => Promise<void>;
   googleLogin: () => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -54,12 +55,16 @@ export function getFriendlyFirebaseError(errorCode: string): string {
 }
 
 // Função auxiliar para sincronizar usuário com backend
-const syncUserWithBackend = async (firebaseUser: any, token: string) => {
+const syncUserWithBackend = async (
+  firebaseUser: any,
+  token: string,
+  name?: string
+) => {
   try {
     console.log("🔄 Sincronizando usuário com backend...");
 
-    // Fazer chamada para GET /api/users/me
-    const response = await authService.syncUserWithBackend();
+    // Fazer chamada para GET /api/users/me (incluindo nome se fornecido)
+    const response = await authService.syncUserWithBackend(name);
 
     if (response.success) {
       console.log("✅ Usuário sincronizado com sucesso:", response.data);
@@ -78,6 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<any>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     // Verificar se já existe token salvo
@@ -148,7 +154,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const signup = async (email: string, password: string) => {
+  const signup = async (email: string, password: string, name: string) => {
     const userCredential = await createUserWithEmailAndPassword(
       auth,
       email,
@@ -159,8 +165,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setToken(idToken);
     authService.setToken(idToken);
 
-    // Sincronizar com backend após cadastro
-    await syncUserWithBackend(userCredential.user, idToken);
+    // Sincronizar com backend após cadastro, incluindo o nome
+    await syncUserWithBackend(userCredential.user, idToken, name);
   };
 
   const googleLogin = async () => {
@@ -190,6 +196,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     setToken(null);
     authService.logout();
+
+    // Redirecionar para a página de login
+    router.push("/");
   };
 
   return (

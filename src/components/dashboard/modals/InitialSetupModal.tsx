@@ -11,15 +11,16 @@ interface InitialSetupData {
 interface Props {
   onClose: () => void;
   onComplete: (data: InitialSetupData) => void;
+  initialData?: Partial<InitialSetupData>;
 }
 
-export function InitialSetupModal({ onClose, onComplete }: Props) {
+export function InitialSetupModal({ onClose, onComplete, initialData }: Props) {
   const [step, setStep] = useState(1);
   const [data, setData] = useState<InitialSetupData>({
-    salarioFixo: 0,
-    receitasExtras: 0,
-    metaInvestimento: 20, // Percentual padrão de 20%
-    percentualGastos: 70, // Percentual padrão de 70%
+    salarioFixo: initialData?.salarioFixo || 0,
+    receitasExtras: initialData?.receitasExtras || 0,
+    metaInvestimento: initialData?.metaInvestimento || 20, // Percentual padrão de 20%
+    percentualGastos: initialData?.percentualGastos || 70, // Percentual padrão de 70%
   });
 
   const handleNext = () => {

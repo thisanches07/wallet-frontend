@@ -9,17 +9,61 @@ interface Notification {
   message: string;
   timestamp: Date;
   persistent?: boolean;
+  autoCloseTimer?: NodeJS.Timeout;
+  createdAt?: number; // timestamp para calcular progresso
+  duration?: number; // duração total em ms
 }
 
 export function NotificationCenter() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isVisible, setIsVisible] = useState(false);
-  
+
   // Obter dados reais do mês atual
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
-  const { expenses, incomes, loading } = useMonthlyData(currentMonth, currentYear);
+  const { expenses, incomes, loading } = useMonthlyData(
+    currentMonth,
+    currentYear
+  );
+
+  // Configurações de tempo para auto-dismiss (em milissegundos)
+  const AUTO_DISMISS_TIMES = {
+    success: 5000, // 5 segundos
+    info: 8000, // 8 segundos
+    warning: 10000, // 10 segundos
+    error: 12000, // 12 segundos
+  };
+
+  // Função para configurar auto-dismiss de uma notificação
+  const setupAutoDismiss = (notification: Notification) => {
+    if (notification.persistent) return notification;
+
+    const dismissTime = AUTO_DISMISS_TIMES[notification.type];
+    const createdAt = Date.now();
+
+    const timer = setTimeout(() => {
+      dismissNotification(notification.id);
+    }, dismissTime);
+
+    return {
+      ...notification,
+      autoCloseTimer: timer,
+      createdAt,
+      duration: dismissTime,
+    };
+  };
+
+  // Limpar timers quando o componente for desmontado
+  useEffect(() => {
+    return () => {
+      notifications.forEach((notification) => {
+        if (notification.autoCloseTimer) {
+          clearTimeout(notification.autoCloseTimer);
+        }
+      });
+    };
+  }, []);
 
   useEffect(() => {
     // Só verificar alertas quando os dados estiverem carregados
@@ -75,11 +119,11 @@ export function NotificationCenter() {
       0
     );
 
-    console.log('📊 Dados financeiros do mês:', {
+    console.log("📊 Dados financeiros do mês:", {
       gastos: gastosReais,
       receitas: receitasReais,
       despesas: expenses.length,
-      rendas: incomes.length
+      rendas: incomes.length,
     });
 
     // Verificar configuração inicial
@@ -110,10 +154,9 @@ export function NotificationCenter() {
           id: "budget-exceeded",
           type: "warning",
           title: "Orçamento ultrapassado",
-          message: `Você gastou R$ ${excesso.toLocaleString(
-            "pt-BR",
-            { minimumFractionDigits: 2 }
-          )} acima do planejado este mês`,
+          message: `Você gastou R$ ${excesso.toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+          })} acima do planejado este mês`,
           timestamp: now,
         });
       }
@@ -125,10 +168,9 @@ export function NotificationCenter() {
           id: "budget-warning",
           type: "warning",
           title: "Atenção ao orçamento",
-          message: `Restam apenas R$ ${restante.toLocaleString(
-            "pt-BR",
-            { minimumFractionDigits: 2 }
-          )} do seu orçamento mensal`,
+          message: `Restam apenas R$ ${restante.toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+          })} do seu orçamento mensal`,
           timestamp: now,
         });
       }
@@ -140,10 +182,9 @@ export function NotificationCenter() {
           id: "good-savings",
           type: "success",
           title: "Parabéns! Economia no mês",
-          message: `Você economizou R$ ${saldoMensal.toLocaleString(
-            "pt-BR",
-            { minimumFractionDigits: 2 }
-          )} este mês`,
+          message: `Você economizou R$ ${saldoMensal.toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+          })} este mês`,
           timestamp: now,
         });
       }
@@ -186,16 +227,42 @@ export function NotificationCenter() {
     }
 
     if (newNotifications.length > 0) {
-      setNotifications(newNotifications);
+      // Aplicar auto-dismiss nas novas notificações
+      const notificationsWithTimers = newNotifications.map(setupAutoDismiss);
+
+      // Limpar notificações antigas antes de adicionar novas (evitar duplicatas)
+      setNotifications((prev) => {
+        // Limpar timers das notificações antigas
+        prev.forEach((notification) => {
+          if (notification.autoCloseTimer) {
+            clearTimeout(notification.autoCloseTimer);
+          }
+        });
+        return notificationsWithTimers;
+      });
+
       setIsVisible(true);
     }
   };
 
   const dismissNotification = (id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-    if (notifications.length <= 1) {
-      setIsVisible(false);
-    }
+    setNotifications((prev) => {
+      const notificationToRemove = prev.find((n) => n.id === id);
+
+      // Limpar timer se existir
+      if (notificationToRemove?.autoCloseTimer) {
+        clearTimeout(notificationToRemove.autoCloseTimer);
+      }
+
+      const remaining = prev.filter((n) => n.id !== id);
+
+      // Se não há mais notificações, esconder o container
+      if (remaining.length === 0) {
+        setIsVisible(false);
+      }
+
+      return remaining;
+    });
   };
 
   const getIcon = (type: string) => {
@@ -224,35 +291,127 @@ export function NotificationCenter() {
     }
   };
 
+  const getProgressBarColor = (type: string) => {
+    switch (type) {
+      case "success":
+        return "bg-success-400";
+      case "warning":
+        return "bg-warning-400";
+      case "error":
+        return "bg-danger-400";
+      default:
+        return "bg-primary-400";
+    }
+  };
+
+  // Componente individual de notificação com progresso
+  const NotificationItem = ({
+    notification,
+  }: {
+    notification: Notification;
+  }) => {
+    const [progress, setProgress] = useState(100);
+    const [isPaused, setIsPaused] = useState(false);
+    const [pausedAt, setPausedAt] = useState<number | null>(null);
+
+    useEffect(() => {
+      if (
+        notification.persistent ||
+        !notification.createdAt ||
+        !notification.duration
+      ) {
+        return;
+      }
+
+      const updateProgress = () => {
+        if (isPaused) return;
+
+        const baseElapsed = pausedAt ? pausedAt - notification.createdAt! : 0;
+        const currentElapsed = pausedAt
+          ? 0
+          : Date.now() - notification.createdAt!;
+        const totalElapsed = baseElapsed + currentElapsed;
+
+        const remaining = Math.max(
+          0,
+          100 - (totalElapsed / notification.duration!) * 100
+        );
+        setProgress(remaining);
+      };
+
+      // Atualizar progresso a cada 100ms
+      const progressInterval = setInterval(updateProgress, 100);
+
+      return () => clearInterval(progressInterval);
+    }, [
+      notification.createdAt,
+      notification.duration,
+      notification.persistent,
+      isPaused,
+      pausedAt,
+    ]);
+
+    const handleMouseEnter = () => {
+      setIsPaused(true);
+      setPausedAt(Date.now());
+    };
+
+    const handleMouseLeave = () => {
+      if (pausedAt) {
+        // Atualizar o timestamp de criação para compensar o tempo pausado
+        notification.createdAt =
+          Date.now() - (pausedAt - notification.createdAt!);
+      }
+      setIsPaused(false);
+      setPausedAt(null);
+    };
+
+    return (
+      <div
+        className={`p-4 rounded-xl border shadow-lg animate-scale-in relative overflow-hidden transition-all duration-200 hover:shadow-xl ${getColorClasses(
+          notification.type
+        )}`}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        {/* Barra de progresso no topo */}
+        {!notification.persistent && (
+          <div className="absolute top-0 left-0 right-0 h-1 bg-black/10">
+            <div
+              className={`h-full transition-all duration-100 ease-linear ${getProgressBarColor(
+                notification.type
+              )} ${isPaused ? "animate-pulse" : ""}`}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        )}
+
+        <div className="flex items-start gap-3 mt-1">
+          <div className="flex-shrink-0">{getIcon(notification.type)}</div>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-semibold text-sm mb-1">{notification.title}</h4>
+            <p className="text-sm opacity-90">{notification.message}</p>
+            {isPaused && (
+              <p className="text-xs opacity-60 mt-1">Timer pausado</p>
+            )}
+          </div>
+          <button
+            onClick={() => dismissNotification(notification.id)}
+            className="flex-shrink-0 p-1 rounded-lg hover:bg-black/5 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   if (!isVisible || notifications.length === 0) return null;
 
   return (
     <div className="fixed top-4 right-4 z-50 space-y-3 max-w-sm">
       {notifications.map((notification) => (
-        <div
-          key={notification.id}
-          className={`p-4 rounded-xl border shadow-lg animate-scale-in ${getColorClasses(
-            notification.type
-          )}`}
-        >
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0">{getIcon(notification.type)}</div>
-            <div className="flex-1 min-w-0">
-              <h4 className="font-semibold text-sm mb-1">
-                {notification.title}
-              </h4>
-              <p className="text-sm opacity-90">{notification.message}</p>
-            </div>
-            {!notification.persistent && (
-              <button
-                onClick={() => dismissNotification(notification.id)}
-                className="flex-shrink-0 p-1 rounded-lg hover:bg-black/5 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        </div>
+        <NotificationItem key={notification.id} notification={notification} />
       ))}
     </div>
   );

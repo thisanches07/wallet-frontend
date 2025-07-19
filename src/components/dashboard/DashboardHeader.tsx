@@ -1,7 +1,7 @@
+import { useSelectedMonth } from "@/context/SelectedMonthContext";
+import { useApi } from "@/hooks/useApi";
 import { BarChart3, Calendar, Download, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useApi } from "@/hooks/useApi";
-import { useSelectedMonth } from "@/context/SelectedMonthContext";
 
 interface Props {
   selectedMonth: string;
@@ -27,7 +27,8 @@ export function DashboardHeader({ selectedMonth }: Props) {
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingComplete, setIsExportingComplete] = useState(false);
-  const { selectedYear, selectedMonth: selectedMonthIndex } = useSelectedMonth();
+  const { selectedYear, selectedMonth: selectedMonthIndex } =
+    useSelectedMonth();
   const api = useApi();
 
   useEffect(() => {
@@ -43,55 +44,73 @@ export function DashboardHeader({ selectedMonth }: Props) {
   const handleExportComplete = async () => {
     try {
       setIsExportingComplete(true);
-      
+
       // Fazer a chamada para a API que retorna um blob do relatório completo por categoria
       const monthForAPI = selectedMonthIndex + 1;
-      const blob = await api.exportMonthlySummaryByCategory(selectedYear, monthForAPI);
-      
+      const blob = await api.exportMonthlySummaryByCategory(
+        selectedYear,
+        monthForAPI
+      );
+
       // Verificar se é um blob válido
       if (blob && blob instanceof Blob && blob.size > 0) {
         // Criar URL para download
         const url = window.URL.createObjectURL(blob);
-        
+
         // Obter nome do mês para o arquivo
-        const monthNames = ['Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho', 
-                           'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        const monthNames = [
+          "Janeiro",
+          "Fevereiro",
+          "Marco",
+          "Abril",
+          "Maio",
+          "Junho",
+          "Julho",
+          "Agosto",
+          "Setembro",
+          "Outubro",
+          "Novembro",
+          "Dezembro",
+        ];
         const monthName = monthNames[selectedMonthIndex];
-        
+
         // Criar elemento de link temporário para download
-        const link = document.createElement('a');
+        const link = document.createElement("a");
         link.href = url;
         link.download = `relatorio-completo-${monthName}-${selectedYear}.xlsx`;
-        
+
         // Adicionar ao DOM, clicar e remover
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         // Limpar URL
         window.URL.revokeObjectURL(url);
-        
-        console.log(`Relatório completo de ${monthName}/${selectedYear} exportado com sucesso!`);
+
+        console.log(
+          `Relatório completo de ${monthName}/${selectedYear} exportado com sucesso!`
+        );
       } else {
-        throw new Error('Arquivo vazio ou resposta inválida da API');
+        throw new Error("Arquivo vazio ou resposta inválida da API");
       }
     } catch (error) {
-      console.error('Erro ao exportar relatório completo:', error);
-      
+      console.error("Erro ao exportar relatório completo:", error);
+
       // Melhor tratamento de erro
-      let errorMessage = 'Erro desconhecido ao exportar relatório completo';
+      let errorMessage = "Erro desconhecido ao exportar relatório completo";
       if (error instanceof Error) {
-        if (error.message.includes('HTTP error! status: 401')) {
-          errorMessage = 'Sessão expirada. Faça login novamente.';
-        } else if (error.message.includes('HTTP error! status: 404')) {
-          errorMessage = 'Dados não encontrados para este período.';
-        } else if (error.message.includes('HTTP error! status: 500')) {
-          errorMessage = 'Erro interno do servidor. Tente novamente em alguns instantes.';
+        if (error.message.includes("HTTP error! status: 401")) {
+          errorMessage = "Sessão expirada. Faça login novamente.";
+        } else if (error.message.includes("HTTP error! status: 404")) {
+          errorMessage = "Dados não encontrados para este período.";
+        } else if (error.message.includes("HTTP error! status: 500")) {
+          errorMessage =
+            "Erro interno do servidor. Tente novamente em alguns instantes.";
         } else {
           errorMessage = error.message;
         }
       }
-      
+
       alert(`Erro ao exportar relatório completo: ${errorMessage}`);
     } finally {
       setIsExportingComplete(false);
@@ -101,59 +120,74 @@ export function DashboardHeader({ selectedMonth }: Props) {
   const handleExport = async () => {
     try {
       setIsExporting(true);
-      
+
       // Fazer a chamada para a API que retorna um blob
       // selectedMonthIndex é 0-based (0 = Janeiro), mas a API pode esperar 1-based (1 = Janeiro)
       const monthForAPI = selectedMonthIndex + 1;
       const blob = await api.exportMonthlySummary(selectedYear, monthForAPI);
-      
+
       // Verificar se é um blob válido
       if (blob && blob instanceof Blob && blob.size > 0) {
         // Criar URL para download
         const url = window.URL.createObjectURL(blob);
-        
+
         // Obter nome do mês para o arquivo
-        const monthNames = ['Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho', 
-                           'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        const monthNames = [
+          "Janeiro",
+          "Fevereiro",
+          "Marco",
+          "Abril",
+          "Maio",
+          "Junho",
+          "Julho",
+          "Agosto",
+          "Setembro",
+          "Outubro",
+          "Novembro",
+          "Dezembro",
+        ];
         const monthName = monthNames[selectedMonthIndex];
-        
+
         // Criar elemento de link temporário para download
-        const link = document.createElement('a');
+        const link = document.createElement("a");
         link.href = url;
         link.download = `relatorio-${monthName}-${selectedYear}.xlsx`;
-        
+
         // Adicionar ao DOM, clicar e remover
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         // Limpar URL
         window.URL.revokeObjectURL(url);
-        
-        console.log(`Relatório de ${monthName}/${selectedYear} exportado com sucesso!`);
-        
+
+        console.log(
+          `Relatório de ${monthName}/${selectedYear} exportado com sucesso!`
+        );
+
         // Opcional: mostrar notificação de sucesso
         // toast.success(`Relatório de ${monthName}/${selectedYear} exportado com sucesso!`);
       } else {
-        throw new Error('Arquivo vazio ou resposta inválida da API');
+        throw new Error("Arquivo vazio ou resposta inválida da API");
       }
     } catch (error) {
-      console.error('Erro ao exportar relatório:', error);
-      
+      console.error("Erro ao exportar relatório:", error);
+
       // Melhor tratamento de erro
-      let errorMessage = 'Erro desconhecido ao exportar relatório';
+      let errorMessage = "Erro desconhecido ao exportar relatório";
       if (error instanceof Error) {
-        if (error.message.includes('HTTP error! status: 401')) {
-          errorMessage = 'Sessão expirada. Faça login novamente.';
-        } else if (error.message.includes('HTTP error! status: 404')) {
-          errorMessage = 'Dados não encontrados para este período.';
-        } else if (error.message.includes('HTTP error! status: 500')) {
-          errorMessage = 'Erro interno do servidor. Tente novamente em alguns instantes.';
+        if (error.message.includes("HTTP error! status: 401")) {
+          errorMessage = "Sessão expirada. Faça login novamente.";
+        } else if (error.message.includes("HTTP error! status: 404")) {
+          errorMessage = "Dados não encontrados para este período.";
+        } else if (error.message.includes("HTTP error! status: 500")) {
+          errorMessage =
+            "Erro interno do servidor. Tente novamente em alguns instantes.";
         } else {
           errorMessage = error.message;
         }
       }
-      
+
       alert(`Erro ao exportar relatório: ${errorMessage}`);
     } finally {
       setIsExporting(false);
@@ -224,7 +258,7 @@ export function DashboardHeader({ selectedMonth }: Props) {
               </button>
 
               {/* Botão principal redesenhado */}
-              <button 
+              <button
                 onClick={handleExportComplete}
                 disabled={isExportingComplete}
                 className="group relative overflow-hidden flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-600 hover:from-blue-700 hover:via-blue-800 hover:to-indigo-700 text-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none min-w-[180px]"
@@ -232,11 +266,13 @@ export function DashboardHeader({ selectedMonth }: Props) {
                 {/* Efeito shimmer aprimorado */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent transform -skew-x-12 translate-x-[-150%] group-hover:translate-x-[150%] transition-transform duration-1000 ease-out"></div>
 
-                <TrendingUp className={`w-5 h-5 relative z-10 transition-all duration-300 ${
-                  isExportingComplete 
-                    ? "animate-pulse scale-110" 
-                    : "group-hover:scale-110"
-                }`} />
+                <TrendingUp
+                  className={`w-5 h-5 relative z-10 transition-all duration-300 ${
+                    isExportingComplete
+                      ? "animate-pulse scale-110"
+                      : "group-hover:scale-110"
+                  }`}
+                />
                 <span className="font-bold text-sm relative z-10 tracking-tight">
                   {isExportingComplete ? "Gerando..." : "Relatório Completo"}
                 </span>

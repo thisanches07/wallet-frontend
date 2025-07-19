@@ -21,6 +21,13 @@ interface UserInfo {
   plan: "Free" | "Pro" | "Premium";
 }
 
+interface BackendUserData {
+  name?: string;
+  email?: string;
+  plan?: string;
+  [key: string]: any;
+}
+
 // Funções utilitárias para dados do usuário Google
 const getUserDisplayName = (user: any) => {
   if (user?.displayName) {
@@ -54,20 +61,41 @@ const useUserProfile = (firebaseUser: any) => {
       return;
     }
 
-    // Função para buscar dados adicionais do backend (opcional)
+    // Função para buscar dados adicionais do backend
     const fetchUserProfile = async () => {
       try {
-        // TODO: Implementar busca no backend usando firebaseUser.uid
-        // const response = await api.get(`/users/${firebaseUser.uid}/profile`);
-        // const backendData = response.data;
-
-        // Por enquanto, usar apenas dados do Firebase/Google
-        const profile: UserInfo = {
-          name: getUserDisplayName(firebaseUser),
-          email: firebaseUser.email || "",
-          avatar: firebaseUser.photoURL || undefined,
-          plan: "Pro", // TODO: buscar do backend
-        };
+        console.log("🔍 Firebase User no Topbar:", {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL
+        });
+        
+        // Importar o authService dinamicamente para evitar circular imports
+        const { authService } = await import("@/services/authService");
+        
+        // Buscar dados do backend primeiro
+        const backendResponse = await authService.getUserProfile();
+        console.log("📊 Resposta do backend no Topbar:", backendResponse);
+        
+        let profile: UserInfo;        if (backendResponse.success && backendResponse.data) {
+          // Usar dados do backend se disponíveis
+          const backendData = backendResponse.data as BackendUserData;
+          profile = {
+            name: backendData.name || getUserDisplayName(firebaseUser),
+            email: backendData.email || firebaseUser.email || "",
+            avatar: firebaseUser.photoURL || undefined,
+            plan: (backendData.plan as "Free" | "Pro" | "Premium") || "Free",
+          };
+        } else {
+          // Fallback para dados do Firebase
+          profile = {
+            name: getUserDisplayName(firebaseUser),
+            email: firebaseUser.email || "",
+            avatar: firebaseUser.photoURL || undefined,
+            plan: "Free",
+          };
+        }
 
         setUserProfile(profile);
       } catch (error) {
@@ -77,7 +105,7 @@ const useUserProfile = (firebaseUser: any) => {
           name: getUserDisplayName(firebaseUser),
           email: firebaseUser.email || "",
           avatar: firebaseUser.photoURL || undefined,
-          plan: "Pro",
+          plan: "Free",
         };
         setUserProfile(profile);
       }
@@ -316,10 +344,14 @@ export function Topbar() {
 
               {/* Menu Items */}
               <div className="p-2">
-                <button className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 rounded-xl transition-colors duration-200">
+                <Link
+                  href="/profile"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 rounded-xl transition-colors duration-200"
+                  onClick={() => setIsUserMenuOpen(false)}
+                >
                   <User className="w-4 h-4" />
                   <span>Meu Perfil</span>
-                </button>
+                </Link>
                 <button className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 rounded-xl transition-colors duration-200">
                   <Settings className="w-4 h-4" />
                   <span>Configurações</span>
@@ -371,6 +403,14 @@ export function Topbar() {
             >
               <TrendingUp className="w-5 h-5" />
               <span>Dashboard</span>
+            </Link>
+            <Link
+              href="/profile"
+              className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 rounded-xl transition-colors"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <User className="w-5 h-5" />
+              <span>Meu Perfil</span>
             </Link>
             <Link
               href="/investimentos"

@@ -1,5 +1,15 @@
-import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from "react";
-import { MonthlySummaryData, useMonthlySummary } from "@/hooks/useMonthlySummary";
+import {
+  MonthlySummaryData,
+  useMonthlySummary,
+} from "@/hooks/useMonthlySummary";
+import {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { useSelectedMonth } from "./SelectedMonthContext";
 
 interface SummaryContextType {
@@ -41,7 +51,7 @@ interface SummaryProviderProps {
 export function SummaryProvider({ children }: SummaryProviderProps) {
   const { selectedYear } = useSelectedMonth();
   const [currentYear, setCurrentYear] = useState(selectedYear);
-  
+
   const {
     summaryData,
     loading,
@@ -106,9 +116,7 @@ export function SummaryProvider({ children }: SummaryProviderProps) {
   };
 
   return (
-    <SummaryContext.Provider value={value}>
-      {children}
-    </SummaryContext.Provider>
+    <SummaryContext.Provider value={value}>{children}</SummaryContext.Provider>
   );
 }
 

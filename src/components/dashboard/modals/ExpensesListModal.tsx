@@ -16,9 +16,9 @@ export default function ExpensesListModal({
   const { deleteExpense } = useExpenses();
   const { selectedMonth, selectedYear } = useSelectedMonth();
   const { expenses, refresh } = useMonthlyData(selectedMonth, selectedYear);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
-  const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set());
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletedIds, setDeletedIds] = useState<Set<number>>(new Set());
+  const [animatingIds, setAnimatingIds] = useState<Set<number>>(new Set());
 
   // Filtrar despesas excluindo as que foram deletadas
   const visibleExpenses = expenses.filter(
@@ -32,7 +32,7 @@ export default function ExpensesListModal({
     onClose();
   };
 
-  const handleDelete = async (expenseId: string) => {
+  const handleDelete = async (expenseId: number) => {
     if (!expenseId) return;
 
     setDeletingId(expenseId);

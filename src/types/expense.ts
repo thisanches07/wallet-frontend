@@ -1,5 +1,5 @@
 export type Expense = {
-  id: string;
+  id: number; // Mantém como number já que vem da API
   descricao: string;
   categoria: string;
   valor: number;

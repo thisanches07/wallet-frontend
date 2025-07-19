@@ -11,7 +11,10 @@ import { useAuth } from "../hooks/useAuth";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [name, setName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSignupMode, setIsSignupMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { login, signup, googleLogin, loading, user } = useAuth();
@@ -24,9 +27,31 @@ export default function LoginPage() {
   const handleAction = async (action: "login" | "signup" | "google") => {
     try {
       setError(null);
-      if (action === "login") await login(email, password);
-      if (action === "signup") await signup(email, password);
-      if (action === "google") await googleLogin();
+
+      if (action === "signup") {
+        // Validações para signup
+        if (!name.trim()) {
+          setError("Por favor, informe seu nome.");
+          return;
+        }
+
+        if (password.length < 6) {
+          setError("A senha deve ter pelo menos 6 caracteres.");
+          return;
+        }
+
+        if (password !== confirmPassword) {
+          setError("As senhas não coincidem.");
+          return;
+        }
+
+        await signup(email, password, name);
+      } else if (action === "login") {
+        await login(email, password);
+      } else if (action === "google") {
+        await googleLogin();
+      }
+
       router.push("/dashboard");
     } catch (err: any) {
       const code = err?.code || err?.message || "";
@@ -37,6 +62,10 @@ export default function LoginPage() {
   const toggleMode = () => {
     setIsSignupMode(!isSignupMode);
     setError(null);
+    // Limpar campos específicos do signup
+    setName("");
+    setConfirmPassword("");
+    setShowConfirmPassword(false);
   };
 
   return (
@@ -134,6 +163,16 @@ export default function LoginPage() {
 
             {/* Formulário */}
             <div className="space-y-4">
+              {/* Campo Nome - apenas no modo signup */}
+              {isSignupMode && (
+                <AuthInput
+                  placeholder="Seu nome completo"
+                  value={name}
+                  onChange={setName}
+                  type="text"
+                />
+              )}
+
               <AuthInput
                 placeholder="seu@email.com"
                 value={email}
@@ -160,6 +199,29 @@ export default function LoginPage() {
                   )}
                 </button>
               </div>
+
+              {/* Campo Confirmar Senha - apenas no modo signup */}
+              {isSignupMode && (
+                <div className="relative">
+                  <AuthInput
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirme sua senha"
+                    value={confirmPassword}
+                    onChange={setConfirmPassword}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              )}
 
               {error && <ErrorMessage message={error} />}
 

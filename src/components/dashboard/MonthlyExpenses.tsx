@@ -1,7 +1,8 @@
 import { AddExpenseModal } from "@/components/dashboard/modals/AddExpenseModal";
 import { useMonthlyData } from "@/context/MonthlyDataContext";
 import { useSelectedMonth } from "@/context/SelectedMonthContext";
-import { Calendar, Plus, Receipt } from "lucide-react";
+import { useExpenses } from "@/hooks/useApi";
+import { Calendar, Plus, Receipt, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 type ApiExpense = {
@@ -29,9 +30,11 @@ export function MonthlyExpenses() {
     selectedMonth,
     selectedYear
   );
+  const { deleteExpense } = useExpenses();
   const [showModal, setShowModal] = useState(false);
   const [showAll, setShowAll] = useState(false);
-  const [justAdded, setJustAdded] = useState<string | null>(null);
+  const [justAdded, setJustAdded] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   // Escutar evento de nova despesa apenas para atualizar a marcação visual
   useEffect(() => {
@@ -55,6 +58,32 @@ export function MonthlyExpenses() {
       );
     };
   }, []);
+
+  // Função para deletar despesa
+  const handleDelete = async (expenseId: number) => {
+    if (!expenseId) return;
+
+    setDeletingId(expenseId);
+    try {
+      // Fazer o delete na API
+      await deleteExpense(expenseId);
+
+      // Disparar evento customizado para atualizar os dados do contexto
+      window.dispatchEvent(
+        new CustomEvent("expenseDeleted", {
+          detail: {
+            id: expenseId, // Passar como number
+            month: selectedMonth,
+            year: selectedYear,
+          },
+        })
+      );
+    } catch (error) {
+      console.error("Erro ao deletar despesa:", error);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const getCategoryIcon = (categoria: string): string => {
     const iconMap: Record<string, string> = {
@@ -89,6 +118,7 @@ export function MonthlyExpenses() {
     (acc: number, item) => acc + +item.valor,
     0
   );
+
   const displayedExpenses = showAll ? expenses : expenses.slice(0, 4);
 
   return (
@@ -162,11 +192,11 @@ export function MonthlyExpenses() {
               {displayedExpenses.map((item, index: number) => (
                 <div
                   key={item.id}
-                  className={`group p-3 rounded-xl border transition-all duration-200 animate-fade-in ${
+                  className={`group p-3 rounded-xl border transition-all duration-300 ease-in-out overflow-hidden ${
                     justAdded === item.id
-                      ? "border-green-200 bg-green-50 shadow-md"
-                      : "border-neutral-100 hover:border-neutral-200 bg-neutral-25 hover:bg-white hover:shadow-sm"
-                  }`}
+                      ? "border-green-200 bg-green-50 shadow-md opacity-100 transform scale-100 translate-x-0 max-h-96"
+                      : "border-neutral-100 hover:border-neutral-200 bg-neutral-25 hover:bg-white hover:shadow-sm opacity-100 transform scale-100 translate-x-0 max-h-96"
+                  } animate-fade-in`}
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <div className="flex items-center justify-between">
@@ -189,19 +219,37 @@ export function MonthlyExpenses() {
                         </div>
                       </div>
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-bold text-danger-600">
-                        -R$ {item.valor.toLocaleString("pt-BR")}
-                      </p>
-                      <div className="flex items-center gap-1 text-xs text-neutral-400 mt-0.5">
-                        <Calendar className="w-3 h-3" />
-                        <span>
-                          {new Date(item.data).toLocaleDateString("pt-BR", {
-                            day: "2-digit",
-                            month: "2-digit",
-                          })}
-                        </span>
+                    <div className="text-right flex-shrink-0 flex items-center gap-2">
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-danger-600">
+                          -R$ {item.valor.toLocaleString("pt-BR")}
+                        </p>
+                        <div className="flex items-center gap-1 text-xs text-neutral-400 mt-0.5">
+                          <Calendar className="w-3 h-3" />
+                          <span>
+                            {new Date(item.data).toLocaleDateString("pt-BR", {
+                              day: "2-digit",
+                              month: "2-digit",
+                            })}
+                          </span>
+                        </div>
                       </div>
+
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        disabled={deletingId === item.id}
+                        className="p-1.5 hover:bg-danger-50 rounded-lg transition-colors group disabled:opacity-50"
+                        title="Excluir despesa"
+                      >
+                        {deletingId === item.id ? (
+                          <div className="w-3 h-3 border border-danger-600 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Trash2
+                            size={14}
+                            className="text-neutral-400 group-hover:text-danger-600"
+                          />
+                        )}
+                      </button>
                     </div>
                   </div>
                 </div>

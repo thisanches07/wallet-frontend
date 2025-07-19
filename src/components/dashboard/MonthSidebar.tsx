@@ -1,3 +1,4 @@
+import { useSummary } from "@/context/SummaryContext";
 import { Calendar, CheckCircle, TrendingUp } from "lucide-react";
 
 interface Props {
@@ -8,6 +9,7 @@ interface Props {
 export function MonthSidebar({ selected, onSelect }: Props) {
   const currentMonth = new Date().getMonth(); // 0-based
   const currentYear = new Date().getFullYear();
+  const { getMonthData, loading } = useSummary();
 
   const months = [
     "Janeiro",
@@ -39,22 +41,8 @@ export function MonthSidebar({ selected, onSelect }: Props) {
     "Dez",
   ];
 
-  // Mock data
-  const monthlyPerformance = [
-    { income: 4500, expenses: 3200, goal: 4000 },
-    { income: 4800, expenses: 3400, goal: 4200 },
-    { income: 5200, expenses: 3800, goal: 4500 },
-    { income: 4900, expenses: 3600, goal: 4300 },
-    { income: 5100, expenses: 3900, goal: 4600 },
-    { income: 5000, expenses: 4200, goal: 4400 },
-    { income: 5300, expenses: 4100, goal: 4700 },
-  ];
-
   const monthsToDisplay = months.slice(0, currentMonth).reverse();
   console.log("meses a serem exibidos ->", monthsToDisplay);
-  const performanceToDisplay = monthlyPerformance
-    .slice(0, currentMonth)
-    .reverse();
 
   return (
     <aside className="w-64 bg-white/80 backdrop-blur-sm border-r border-neutral-200/50 h-full shadow-lg">
@@ -92,14 +80,12 @@ export function MonthSidebar({ selected, onSelect }: Props) {
           </div>
 
           {(() => {
-            const performance = monthlyPerformance[currentMonth] || {
-              income: 0,
-              expenses: 0,
-            };
-            const balance = performance.income - performance.expenses;
+            const monthData = getMonthData(currentMonth);
+            const income = monthData?.totalIncomes || 0;
+            const expenses = monthData?.totalExpenses || 0;
+            const balance = income - expenses;
             const isPositive = balance >= 0;
-            const savingsRate =
-              performance.income > 0 ? (balance / performance.income) * 100 : 0;
+            const savingsRate = income > 0 ? (balance / income) * 100 : 0;
 
             return (
               <div className="space-y-3">
@@ -159,66 +145,74 @@ export function MonthSidebar({ selected, onSelect }: Props) {
 
       {/* Lista de meses (invertida) */}
       <div className="flex-1 overflow-y-auto p-3">
-        <div className="space-y-1">
-          {monthsToDisplay.map((month, index) => {
-            console.log("mes ->", month, "index ->", index);
-            const realIndex = currentMonth - (index + 1);
-            const performance = performanceToDisplay[index] || {
-              income: 0,
-              expenses: 0,
-            };
-            const balance = performance.income - performance.expenses;
-            const isPositive = balance >= 0;
-            const isSelected = selected === realIndex;
-            const isCurrentMonth = realIndex === currentMonth;
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+            <span className="ml-2 text-sm text-gray-600">
+              Carregando dados...
+            </span>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {monthsToDisplay.map((month, index) => {
+              console.log("mes ->", month, "index ->", index);
+              const realIndex = currentMonth - (index + 1);
+              const monthData = getMonthData(realIndex);
+              const income = monthData?.totalIncomes || 0;
+              const expenses = monthData?.totalExpenses || 0;
+              const balance = income - expenses;
+              const isPositive = balance >= 0;
+              const isSelected = selected === realIndex;
+              const isCurrentMonth = realIndex === currentMonth;
 
-            return (
-              <button
-                key={month}
-                onClick={() => onSelect(realIndex)}
-                className={`w-full p-3 rounded-lg transition-all duration-200 text-left border ${
-                  isSelected
-                    ? "bg-primary-50 border-primary-200 shadow-sm"
-                    : isCurrentMonth
-                    ? "bg-emerald-50 border-emerald-200 hover:bg-emerald-100"
-                    : "hover:bg-neutral-50 border-transparent hover:border-neutral-200"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`text-xs font-bold px-2 py-0.5 rounded ${
-                        isSelected
-                          ? "bg-primary-100 text-primary-700"
-                          : isCurrentMonth
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-neutral-100 text-neutral-600"
+              return (
+                <button
+                  key={month}
+                  onClick={() => onSelect(realIndex)}
+                  className={`w-full p-3 rounded-lg transition-all duration-200 text-left border ${
+                    isSelected
+                      ? "bg-primary-50 border-primary-200 shadow-sm"
+                      : isCurrentMonth
+                      ? "bg-emerald-50 border-emerald-200 hover:bg-emerald-100"
+                      : "hover:bg-neutral-50 border-transparent hover:border-neutral-200"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-xs font-bold px-2 py-0.5 rounded ${
+                          isSelected
+                            ? "bg-primary-100 text-primary-700"
+                            : isCurrentMonth
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-neutral-100 text-neutral-600"
+                        }`}
+                      >
+                        {monthsShort[realIndex]}
+                      </span>
+                      {isCurrentMonth ? (
+                        <div className="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full text-xs font-semibold">
+                          <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                          Atual
+                        </div>
+                      ) : (
+                        <CheckCircle className="w-3 h-3 text-emerald-500" />
+                      )}
+                    </div>
+
+                    <div
+                      className={`text-xs font-medium ${
+                        isPositive ? "text-emerald-600" : "text-red-500"
                       }`}
                     >
-                      {monthsShort[realIndex]}
-                    </span>
-                    {isCurrentMonth ? (
-                      <div className="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full text-xs font-semibold">
-                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
-                        Atual
-                      </div>
-                    ) : (
-                      <CheckCircle className="w-3 h-3 text-emerald-500" />
-                    )}
+                      R$ {Math.abs(balance).toLocaleString("pt-BR")}
+                    </div>
                   </div>
-
-                  <div
-                    className={`text-xs font-medium ${
-                      isPositive ? "text-emerald-600" : "text-red-500"
-                    }`}
-                  >
-                    R$ {Math.abs(balance).toLocaleString("pt-BR")}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Rodapé */}

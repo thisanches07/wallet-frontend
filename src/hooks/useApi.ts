@@ -120,20 +120,25 @@ export function useApi() {
         }),
 
       // Summary mensal
-      getMonthlySummary: (year: number) => 
+      getMonthlySummary: (year: number) =>
         apiCall(`/api/summary/monthly?year=${year}`),
-      
+
       // Exportar dados mensais em Excel
       exportMonthlySummary: async (year: number, month: number) => {
         try {
-          const token = localStorage.getItem('authToken');
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/summary/export-monthly?year=${year}&month=${month}`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          });
+          const token = localStorage.getItem("authToken");
+          const response = await fetch(
+            `${
+              process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+            }/api/summary/export-monthly?year=${year}&month=${month}`,
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
 
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -143,7 +148,7 @@ export function useApi() {
           const blob = await response.blob();
           return blob;
         } catch (error) {
-          console.error('Erro ao exportar:', error);
+          console.error("Erro ao exportar:", error);
           throw new Error("Erro ao exportar dados");
         }
       },
@@ -151,14 +156,19 @@ export function useApi() {
       // Exportar relatório completo por categoria
       exportMonthlySummaryByCategory: async (year: number, month: number) => {
         try {
-          const token = localStorage.getItem('authToken');
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/summary/export-monthly-by-category?year=${year}&month=${month}`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          });
+          const token = localStorage.getItem("authToken");
+          const response = await fetch(
+            `${
+              process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+            }/api/summary/export-monthly-by-category?year=${year}&month=${month}`,
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
 
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -168,10 +178,76 @@ export function useApi() {
           const blob = await response.blob();
           return blob;
         } catch (error) {
-          console.error('Erro ao exportar relatório completo:', error);
+          console.error("Erro ao exportar relatório completo:", error);
           throw new Error("Erro ao exportar relatório completo");
         }
       },
+
+      // Exportar evolução anual de receitas e despesas
+      exportYearlyEvolution: async (year: number) => {
+        try {
+          const token = localStorage.getItem("authToken");
+          const response = await fetch(
+            `${
+              process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+            }/api/summary/export-yearly-evolution?year=${year}`,
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          // Obter o blob diretamente da resposta
+          const blob = await response.blob();
+          return blob;
+        } catch (error) {
+          console.error("Erro ao exportar evolução anual:", error);
+          throw new Error("Erro ao exportar evolução anual");
+        }
+      },
+
+      // Income Allocation APIs
+      previewIncomeAllocation: (data: {
+        fixedSalary: number;
+        extraIncome: number;
+        investmentsPercentage: number;
+        expensesPercentage: number;
+      }) =>
+        apiCall("/api/users/income-allocation/preview", {
+          method: "POST",
+          body: JSON.stringify(data),
+        }),
+
+      createIncomeAllocation: (data: {
+        fixedSalary: number;
+        extraIncome: number;
+        investmentsPercentage: number;
+        expensesPercentage: number;
+      }) =>
+        apiCall("/api/users/income-allocation", {
+          method: "POST",
+          body: JSON.stringify(data),
+        }),
+
+      getIncomeAllocation: () => apiCall("/api/users/income-allocation"),
+
+      updateIncomeAllocation: (data: {
+        fixedSalary: number;
+        extraIncome: number;
+        investmentsPercentage: number;
+        expensesPercentage: number;
+      }) =>
+        apiCall("/api/users/income-allocation", {
+          method: "PUT",
+          body: JSON.stringify(data),
+        }),
     }),
     [apiCall]
   );
@@ -214,6 +290,20 @@ export function useIncomes() {
         api.getIncomes(filters),
       createIncome: api.createIncome,
       deleteIncome: api.deleteIncome,
+    }),
+    [api]
+  );
+}
+
+export function useIncomeAllocation() {
+  const api = useApi();
+
+  return useMemo(
+    () => ({
+      previewAllocation: api.previewIncomeAllocation,
+      createAllocation: api.createIncomeAllocation,
+      getAllocation: api.getIncomeAllocation,
+      updateAllocation: api.updateIncomeAllocation,
     }),
     [api]
   );

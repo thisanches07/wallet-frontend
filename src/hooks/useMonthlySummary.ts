@@ -42,33 +42,52 @@ export function useMonthlySummary(year: number) {
   }, [fetchSummary]);
 
   // Função para obter dados de um mês específico
-  const getMonthData = useCallback((month: number): MonthlySummaryData | null => {
-    return summaryData.find(data => data.month === month + 1) || null;
-  }, [summaryData]);
+  const getMonthData = useCallback(
+    (month: number): MonthlySummaryData | null => {
+      return summaryData.find((data) => data.month === month + 1) || null;
+    },
+    [summaryData]
+  );
 
   // Função para comparar com o mês anterior
-  const getComparison = useCallback((month: number, type: 'totalIncomes' | 'totalExpenses' | 'balance'): ComparisonData => {
-    const currentData = getMonthData(month);
-    const previousData = getMonthData(month - 1);
+  const getComparison = useCallback(
+    (
+      month: number,
+      type: "totalIncomes" | "totalExpenses" | "balance"
+    ): ComparisonData => {
+      const currentData = getMonthData(month);
+      const previousData = getMonthData(month - 1);
 
-    const current = currentData?.[type] || 0;
-    const previous = previousData?.[type] || 0;
-    const change = current - previous;
-    const changePercentage = previous !== 0 ? (change / Math.abs(previous)) * 100 : 0;
+      const current = currentData?.[type] || 0;
+      const previous = previousData?.[type] || 0;
+      const change = current - previous;
+      const changePercentage =
+        previous !== 0 ? (change / Math.abs(previous)) * 100 : 0;
 
-    return {
-      current,
-      previous,
-      change,
-      changePercentage,
-      isPositive: change >= 0,
-    };
-  }, [getMonthData]);
+      return {
+        current,
+        previous,
+        change,
+        changePercentage,
+        isPositive: change >= 0,
+      };
+    },
+    [getMonthData]
+  );
 
   // Funções específicas para cada tipo
-  const getIncomeComparison = useCallback((month: number) => getComparison(month, 'totalIncomes'), [getComparison]);
-  const getExpenseComparison = useCallback((month: number) => getComparison(month, 'totalExpenses'), [getComparison]);
-  const getBalanceComparison = useCallback((month: number) => getComparison(month, 'balance'), [getComparison]);
+  const getIncomeComparison = useCallback(
+    (month: number) => getComparison(month, "totalIncomes"),
+    [getComparison]
+  );
+  const getExpenseComparison = useCallback(
+    (month: number) => getComparison(month, "totalExpenses"),
+    [getComparison]
+  );
+  const getBalanceComparison = useCallback(
+    (month: number) => getComparison(month, "balance"),
+    [getComparison]
+  );
 
   // Função para refetch (útil quando houver mudanças) - agora usa o fetchSummary memoizado
   const refetch = useCallback(async () => {

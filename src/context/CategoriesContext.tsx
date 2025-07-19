@@ -38,15 +38,20 @@ export const CategoriesProvider = ({
   const { user, token } = useAuth();
 
   const fetchCategories = async () => {
-    if (!token) return;
+    if (!token) {
+      console.log("❌ Sem token para carregar categorias");
+      return;
+    }
 
     try {
       setLoading(true);
       setError(null);
 
       console.log("🔄 Carregando categorias...");
+      console.log("🔑 Token:", token ? "✅ Existe" : "❌ Não existe");
 
       const response = await authService.apiCall<Category[]>("/api/categories");
+      console.log("📦 Response categorias:", response);
 
       if (response.success && response.data) {
         setCategories(response.data);
@@ -70,10 +75,16 @@ export const CategoriesProvider = ({
 
   // Carregar categorias automaticamente quando o usuário fizer login
   useEffect(() => {
+    console.log("🔄 CategoriesContext useEffect:", {
+      user: !!user,
+      token: !!token,
+    });
     if (user && token) {
+      console.log("✅ Iniciando carregamento de categorias");
       fetchCategories();
     } else {
       // Limpar categorias quando logout
+      console.log("🧹 Limpando categorias (sem user/token)");
       setCategories([]);
       setError(null);
     }
