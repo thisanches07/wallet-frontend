@@ -1,33 +1,28 @@
 import { useMonthlyData } from "@/context/MonthlyDataContext";
 import { useSelectedMonth } from "@/context/SelectedMonthContext";
+import { useSummary } from "@/context/SummaryContext";
 import { List, TrendingDown, TrendingUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import IncomesListModal from "../modals/IncomesListModal";
 
 export default function ReceipesCard() {
   const { selectedMonth, selectedYear, isCurrentMonth } = useSelectedMonth();
-  const { incomes, loading } = useMonthlyData(selectedMonth, selectedYear);
+  const { incomes, loading: monthlyLoading } = useMonthlyData(selectedMonth, selectedYear);
+  const { getMonthData, getIncomeComparison, loading: summaryLoading } = useSummary();
 
   const [isEditing, setIsEditing] = useState(false);
-  const [totalReceitas, setTotalReceitas] = useState(0);
   const [inputValue, setInputValue] = useState(0);
-  const [previousReceitas] = useState(4500); // Valor anterior para comparação
   const [isModalOpen, setIsModalOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const change = totalReceitas - previousReceitas;
-  const changePercentage =
-    previousReceitas > 0 ? (change / previousReceitas) * 100 : 0;
-  const isGrowing = change > 0;
+  const monthData = getMonthData(selectedMonth);
+  const totalReceitas = monthData?.totalIncomes || 0;
+  const comparison = getIncomeComparison(selectedMonth);
+  const isGrowing = comparison.isPositive;
 
   useEffect(() => {
-    const total = incomes.reduce(
-      (acc: number, receita) => acc + Number(receita.amount),
-      0
-    );
-    setTotalReceitas(total);
-    setInputValue(total);
-  }, [incomes]);
+    setInputValue(totalReceitas);
+  }, [totalReceitas]);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -43,6 +38,21 @@ export default function ReceipesCard() {
 
   const receitasRecorrentes = incomes.filter((r) => r.tipo === "recorrente");
   const receitasPontuais = incomes.filter((r) => r.tipo === "pontual");
+
+  if (summaryLoading) {
+    return (
+      <div className="bg-white border border-neutral-200/80 p-4 sm:p-6 rounded-2xl shadow-sm transition-all duration-300 group">
+        <div className="animate-pulse">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gray-200"></div>
+            <div className="h-4 bg-gray-200 rounded w-32"></div>
+          </div>
+          <div className="h-8 bg-gray-200 rounded w-28 mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-20"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white border border-neutral-200/80 p-4 sm:p-6 rounded-2xl shadow-sm transition-all duration-300 group">
@@ -149,7 +159,7 @@ export default function ReceipesCard() {
       </div>
 
       {/* Linha 5: Comparativo */}
-      {Math.abs(changePercentage) > 0.1 && (
+      {Math.abs(comparison.changePercentage) > 0.1 && (
         <div
           className={`flex items-center gap-1 ${
             isGrowing ? "text-success-600" : "text-danger-600"
@@ -162,7 +172,7 @@ export default function ReceipesCard() {
           )}
           <span className="text-sm font-medium">
             {isGrowing ? "+" : ""}
-            {Math.abs(changePercentage).toFixed(1)}% vs mês anterior
+            {Math.abs(comparison.changePercentage).toFixed(1)}% vs mês anterior
           </span>
         </div>
       )}

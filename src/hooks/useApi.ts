@@ -118,6 +118,60 @@ export function useApi() {
           method: "POST",
           body: JSON.stringify(goal),
         }),
+
+      // Summary mensal
+      getMonthlySummary: (year: number) => 
+        apiCall(`/api/summary/monthly?year=${year}`),
+      
+      // Exportar dados mensais em Excel
+      exportMonthlySummary: async (year: number, month: number) => {
+        try {
+          const token = localStorage.getItem('authToken');
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/summary/export-monthly?year=${year}&month=${month}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          // Obter o blob diretamente da resposta
+          const blob = await response.blob();
+          return blob;
+        } catch (error) {
+          console.error('Erro ao exportar:', error);
+          throw new Error("Erro ao exportar dados");
+        }
+      },
+
+      // Exportar relatório completo por categoria
+      exportMonthlySummaryByCategory: async (year: number, month: number) => {
+        try {
+          const token = localStorage.getItem('authToken');
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/summary/export-monthly-by-category?year=${year}&month=${month}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          // Obter o blob diretamente da resposta
+          const blob = await response.blob();
+          return blob;
+        } catch (error) {
+          console.error('Erro ao exportar relatório completo:', error);
+          throw new Error("Erro ao exportar relatório completo");
+        }
+      },
     }),
     [apiCall]
   );
@@ -170,5 +224,14 @@ export function useReports() {
 
   return {
     getReports: api.getReports,
+  };
+}
+
+export function useExport() {
+  const api = useApi();
+
+  return {
+    exportMonthlySummary: api.exportMonthlySummary,
+    exportMonthlySummaryByCategory: api.exportMonthlySummaryByCategory,
   };
 }

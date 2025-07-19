@@ -1,37 +1,25 @@
-import { useMonthlyData } from "@/context/MonthlyDataContext";
 import { useSelectedMonth } from "@/context/SelectedMonthContext";
+import { useSummary } from "@/context/SummaryContext";
 import { TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 export default function BalanceCard() {
   const { selectedMonth, selectedYear, isCurrentMonth } = useSelectedMonth();
-  const { expenses, incomes } = useMonthlyData(selectedMonth, selectedYear);
+  const { getMonthData, getBalanceComparison, loading } = useSummary();
   const [isEditing, setIsEditing] = useState(false);
-  const [balance, setBalance] = useState(0);
   const [inputValue, setInputValue] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const expensesTotal = expenses.reduce(
-      (acc, expense) => acc + Number(expense.valor),
-      0
-    );
-    const incomesTotal = incomes.reduce(
-      (acc, income) => acc + Number(income.amount),
-      0
-    );
-    const calculatedBalance = incomesTotal - expensesTotal;
+  const monthData = getMonthData(selectedMonth);
+  const balance = monthData?.balance || 0;
+  const comparison = getBalanceComparison(selectedMonth);
 
-    setBalance(calculatedBalance);
-    setInputValue(calculatedBalance);
-  }, [expenses, incomes]);
+  useEffect(() => {
+    setInputValue(balance);
+  }, [balance]);
 
   const isPositive = balance >= 0;
-  const previousBalance = 2500;
-  const change = balance - previousBalance;
-  const changePercentage =
-    previousBalance > 0 ? (change / previousBalance) * 100 : 0;
-  const isGrowing = change > 0;
+  const isGrowing = comparison.isPositive;
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -41,6 +29,21 @@ export default function BalanceCard() {
   }, [isEditing]);
 
   const saveChanges = () => setIsEditing(false);
+
+  if (loading) {
+    return (
+      <div className="bg-white border border-neutral-200/80 p-4 sm:p-6 rounded-2xl shadow-sm transition-all duration-300 group">
+        <div className="animate-pulse">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gray-200"></div>
+            <div className="h-4 bg-gray-200 rounded w-24"></div>
+          </div>
+          <div className="h-8 bg-gray-200 rounded w-32 mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-20"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white border border-neutral-200/80 p-4 sm:p-6 rounded-2xl shadow-sm transition-all duration-300 group">
@@ -107,7 +110,7 @@ export default function BalanceCard() {
       </div>
 
       {/* Linha 4: Comparativo */}
-      {Math.abs(changePercentage) > 0.1 && (
+      {Math.abs(comparison.changePercentage) > 0.1 && (
         <div
           className={`flex items-center gap-1 ${
             isGrowing ? "text-success-600" : "text-danger-600"
@@ -119,7 +122,7 @@ export default function BalanceCard() {
             <TrendingDown size={14} className="flex-shrink-0" />
           )}
           <span className="text-sm font-medium">
-            {Math.abs(changePercentage).toFixed(1)}% vs mês anterior
+            {Math.abs(comparison.changePercentage).toFixed(1)}% vs mês anterior
           </span>
         </div>
       )}

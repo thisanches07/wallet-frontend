@@ -1,41 +1,27 @@
 import { useMonthlyData } from "@/context/MonthlyDataContext";
 import { useSelectedMonth } from "@/context/SelectedMonthContext";
+import { useSummary } from "@/context/SummaryContext";
 import { List, TrendingDown, TrendingUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ExpensesListModal from "../modals/ExpensesListModal";
 
 export default function ExpensesCard() {
   const { selectedMonth, selectedYear, isCurrentMonth } = useSelectedMonth();
-  const { expenses, loading } = useMonthlyData(selectedMonth, selectedYear);
+  const { expenses, loading: monthlyLoading } = useMonthlyData(selectedMonth, selectedYear);
+  const { getMonthData, getExpenseComparison, loading: summaryLoading } = useSummary();
   const [isEditing, setIsEditing] = useState(false);
-  const [gastos, setGastos] = useState(0);
   const [inputValue, setInputValue] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Simulação de comparação mensal
-  const previousGastos = 3200; // Mock do mês anterior
-
-  const totalExpenses = expenses.reduce(
-    (acc, expense) => acc + Number(expense.valor),
-    0
-  );
-
-  const change = totalExpenses - previousGastos;
-  const changePercentage =
-    previousGastos > 0 ? (change / previousGastos) * 100 : 0;
-  const isIncreasing = change > 0; // Para gastos, aumento é negativo
+  const monthData = getMonthData(selectedMonth);
+  const totalExpenses = monthData?.totalExpenses || 0;
+  const comparison = getExpenseComparison(selectedMonth);
+  const isIncreasing = comparison.isPositive; // Para gastos, aumento é negativo
 
   useEffect(() => {
-    const saved = localStorage.getItem("gastosTotal");
-    if (saved) {
-      const parsed = parseFloat(saved);
-      if (!isNaN(parsed)) {
-        setGastos(parsed);
-        setInputValue(parsed);
-      }
-    }
-  }, []);
+    setInputValue(totalExpenses);
+  }, [totalExpenses]);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -45,10 +31,24 @@ export default function ExpensesCard() {
   }, [isEditing]);
 
   const saveChanges = () => {
-    localStorage.setItem("gastosTotal", inputValue.toString());
-    setGastos(inputValue);
     setIsEditing(false);
+    // TODO: Implementar funcionalidade de ajuste se necessário
   };
+
+  if (summaryLoading) {
+    return (
+      <div className="bg-white border border-neutral-200/80 p-4 sm:p-6 rounded-2xl shadow-sm transition-all duration-300 group">
+        <div className="animate-pulse">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gray-200"></div>
+            <div className="h-4 bg-gray-200 rounded w-20"></div>
+          </div>
+          <div className="h-8 bg-gray-200 rounded w-28 mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-20"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white border border-neutral-200/80 p-4 sm:p-6 rounded-2xl shadow-sm transition-all duration-300 group">
@@ -124,7 +124,7 @@ export default function ExpensesCard() {
       </div>
 
       {/* Linha 4: Comparativo */}
-      {Math.abs(changePercentage) > 0.1 && (
+      {Math.abs(comparison.changePercentage) > 0.1 && (
         <div
           className={`flex items-center gap-1 ${
             isIncreasing ? "text-danger-600" : "text-success-600"
@@ -137,7 +137,7 @@ export default function ExpensesCard() {
           )}
           <span className="text-sm font-medium">
             {isIncreasing ? "+" : "-"}
-            {Math.abs(changePercentage).toFixed(1)}%
+            {Math.abs(comparison.changePercentage).toFixed(1)}%
           </span>
         </div>
       )}

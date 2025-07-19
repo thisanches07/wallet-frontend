@@ -12,6 +12,7 @@ import {
   SelectedMonthProvider,
   useSelectedMonth,
 } from "@/context/SelectedMonthContext";
+import { SummaryProvider } from "@/context/SummaryContext";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardData } from "@/types/dashboard";
 import { TrendingUp } from "lucide-react";
@@ -21,9 +22,11 @@ import { useEffect, useState } from "react";
 export default function DashboardPage() {
   return (
     <SelectedMonthProvider>
-      <MonthlyDataProvider>
-        <DashboardContent />
-      </MonthlyDataProvider>
+      <SummaryProvider>
+        <MonthlyDataProvider>
+          <DashboardContent />
+        </MonthlyDataProvider>
+      </SummaryProvider>
     </SelectedMonthProvider>
   );
 }
