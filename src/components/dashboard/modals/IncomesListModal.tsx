@@ -2,7 +2,7 @@ import { useMonthlyData } from "@/context/MonthlyDataContext";
 import { useSelectedMonth } from "@/context/SelectedMonthContext";
 import { useIncomes } from "@/hooks/useApi";
 import { DollarSign, Trash2, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface IncomesListModalProps {
   isOpen: boolean;
@@ -19,14 +19,26 @@ export default function IncomesListModal({
   const [deletedIds, setDeletedIds] = useState<Set<number>>(new Set());
   const [animatingIds, setAnimatingIds] = useState<Set<number>>(new Set());
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [localIncomes, setLocalIncomes] = useState(incomes);
+
+  // Sincronizar com o contexto, mas preservar estado local durante animações
+  useEffect(() => {
+    if (animatingIds.size === 0) {
+      // Só atualizar se não há animações em andamento
+      setLocalIncomes(incomes);
+    }
+  }, [incomes, animatingIds.size]);
 
   // Filtrar receitas excluindo as que foram deletadas
-  const visibleIncomes = incomes.filter((income) => !deletedIds.has(income.id));
+  const visibleIncomes = localIncomes.filter(
+    (income) => !deletedIds.has(income.id)
+  );
 
   // Resetar lista de deletados quando modal fechar
   const handleClose = () => {
     setDeletedIds(new Set());
     setAnimatingIds(new Set());
+    setLocalIncomes(incomes); // Resetar para dados do contexto
     onClose();
   };
 
@@ -38,9 +50,17 @@ export default function IncomesListModal({
       // Iniciar animação de fade-out
       setAnimatingIds((prev) => new Set(prev).add(incomeId));
 
-      // Aguardar animação antes de remover da lista
+      // Aguardar animação antes de remover da lista local
       setTimeout(() => {
         setDeletedIds((prev) => new Set(prev).add(incomeId));
+        // Após a animação, limpar o ID de animação
+        setTimeout(() => {
+          setAnimatingIds((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(incomeId);
+            return newSet;
+          });
+        }, 100);
       }, 300); // Duração da animação
 
       // Fazer o delete na API

@@ -1,4 +1,4 @@
-import { PieChart, Plus, RefreshCw, Upload } from "lucide-react";
+import { PieChart, Plus, Upload } from "lucide-react";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import { AddExpenseModal } from "../modals/AddExpenseModal";
@@ -29,12 +29,12 @@ export default function QuickActionsCard() {
       color: "bg-success-50 text-success-600 hover:bg-success-100",
       action: () => setShowIncomeModal(true),
     },
-    {
-      icon: RefreshCw,
-      label: "Recorrências",
-      color: "bg-primary-50 text-primary-600 hover:bg-primary-100",
-      action: () => setShowRecurringModal(true),
-    },
+    // {
+    //   icon: RefreshCw,
+    //   label: "Recorrências",
+    //   color: "bg-primary-50 text-primary-600 hover:bg-primary-100",
+    //   action: () => setShowRecurringModal(true),
+    // },
     {
       icon: PieChart,
       label: "Relatórios",
@@ -90,8 +90,8 @@ export default function QuickActionsCard() {
             const newTotal = currentTotal + expense.valor;
             localStorage.setItem("gastosTotal", newTotal.toString());
 
-            console.log("Despesa salva:", newExpense);
-            console.log("Novo total de gastos:", newTotal);
+
+
             setShowExpenseModal(false);
           }}
         />
@@ -101,7 +101,7 @@ export default function QuickActionsCard() {
         <AddIncomeModal
           onClose={() => setShowIncomeModal(false)}
           onAdd={(income) => {
-            console.log("Nova receita adicionada:", income);
+
             setShowIncomeModal(false);
           }}
         />
@@ -115,7 +115,7 @@ export default function QuickActionsCard() {
         <AddRecurringExpenseModal
           onClose={() => setShowRecurringExpenseModal(false)}
           onAdd={(expense) => {
-            console.log("Nova despesa recorrente adicionada:", expense);
+
             setShowRecurringExpenseModal(false);
           }}
         />

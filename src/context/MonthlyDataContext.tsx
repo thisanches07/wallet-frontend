@@ -64,7 +64,6 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
   // Função para invalidar dados de um mês específico
   const invalidateMonth = useCallback((month: number, year: number) => {
     const key = `${year}-${month}`;
-    console.log(`🔄 Invalidando dados para ${month + 1}/${year}`);
 
     setData((prev) => {
       const newData = { ...prev };
@@ -149,8 +148,6 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
   const refreshMonthData = useCallback(async (month: number, year: number) => {
     const key = `${year}-${month}`;
 
-    console.log(`🔄 Fazendo refresh em background para ${month + 1}/${year}`);
-
     try {
       // Fazer requisições em paralelo
       const [expenses, incomes] = await Promise.all([
@@ -167,11 +164,6 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
           error: null,
         },
       }));
-
-      console.log(`✅ Refresh concluído para ${month + 1}/${year}`, {
-        expenses: expenses.length,
-        incomes: incomes.length,
-      });
     } catch (error) {
       console.error(`❌ Erro no refresh para ${month + 1}/${year}:`, error);
     }
@@ -181,25 +173,11 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
     async (month: number, year: number) => {
       const key = `${year}-${month}`;
 
-      console.log(`🔍 Verificando dados para ${month + 1}/${year}`, {
-        hasData: !!dataRef.current[key],
-        isLoading: loadingStatesRef.current.has(key),
-        inQueue: requestQueueRef.current.has(key),
-        currentData: dataRef.current[key],
-      });
-
       // CONTROLE TRIPLO: Se já está carregando OU na fila de requisições, não iniciar nova requisição
       if (
         loadingStatesRef.current.has(key) ||
         requestQueueRef.current.has(key)
       ) {
-        console.log(
-          `⏳ Já processando dados para ${
-            month + 1
-          }/${year} (loading: ${loadingStatesRef.current.has(
-            key
-          )}, queued: ${requestQueueRef.current.has(key)})`
-        );
         return;
       }
 
@@ -209,11 +187,8 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
         !dataRef.current[key].loading &&
         !dataRef.current[key].error
       ) {
-        console.log(`✅ Dados já existem para ${month + 1}/${year}`);
         return;
       }
-
-      console.log(`🔄 Iniciando carregamento para ${month + 1}/${year}`);
 
       // Adicionar à fila de requisições ANTES de tudo
       requestQueueRef.current.add(key);
@@ -247,11 +222,6 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
             error: null,
           },
         }));
-
-        console.log(`✅ Dados carregados para ${month + 1}/${year}`, {
-          expenses: expenses.length,
-          incomes: incomes.length,
-        });
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Erro ao carregar dados";
@@ -302,7 +272,6 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
 
     // Só carregar se ainda não temos dados para o mês atual
     if (!data[currentKey]) {
-      console.log("🚀 Inicializando dados do mês atual");
       loadMonthData(now.getMonth(), now.getFullYear());
     }
   }, []); // Array vazio para executar apenas na montagem
@@ -318,8 +287,6 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
       const month = expenseDate.getMonth();
       const year = expenseDate.getFullYear();
       const key = `${year}-${month}`;
-
-      console.log(`💰 Expense adicionado, atualizando ${month + 1}/${year}`);
 
       // Ao invés de deletar os dados, adicionar o novo expense localmente
       setData((prev) => {
@@ -356,9 +323,6 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
       if (!id) return;
 
       const key = `${year}-${month}`;
-      console.log(
-        `🗑️ Expense deletado, removendo ${id} de ${month + 1}/${year}`
-      );
 
       setData((prev) => {
         const currentData = prev[key];
@@ -385,8 +349,6 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
       const month = incomeDate.getMonth();
       const year = incomeDate.getFullYear();
       const key = `${year}-${month}`;
-
-      console.log(`💵 Income adicionado, atualizando ${month + 1}/${year}`);
 
       // Converter income para o formato esperado pelo contexto
       const contextIncome: IncomeData = {
@@ -421,9 +383,6 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
       if (!id) return;
 
       const key = `${year}-${month}`;
-      console.log(
-        `🗑️ Income deletado, removendo ${id} de ${month + 1}/${year}`
-      );
 
       setData((prev) => {
         const currentData = prev[key];
@@ -484,16 +443,6 @@ export function useMonthlyData(month?: number, year?: number) {
   useEffect(() => {
     const currentData = context.data[key];
 
-    console.log(
-      `🎯 Hook ${Math.random().toString(36).substr(2, 5)} verificando ${
-        targetMonth + 1
-      }/${targetYear}`,
-      {
-        hasData: !!currentData,
-        data: currentData,
-      }
-    );
-
     // Só fazer requisição se realmente não temos dados válidos
     if (
       !currentData ||
@@ -504,13 +453,8 @@ export function useMonthlyData(month?: number, year?: number) {
     ) {
       // Verificar se já não está sendo processado antes de solicitar
       if (!context.data[key]?.loading) {
-        console.log(
-          `📞 Hook solicitando carregamento de ${targetMonth + 1}/${targetYear}`
-        );
         context.loadMonthData(targetMonth, targetYear);
       }
-    } else {
-      console.log(`✅ Hook já tem dados para ${targetMonth + 1}/${targetYear}`);
     }
   }, [key, context.loadMonthData]); // Mantendo apenas dependências essenciais
 

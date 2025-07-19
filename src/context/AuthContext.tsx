@@ -49,8 +49,6 @@ export function getFriendlyFirebaseError(errorCode: string): string {
       "Muitas tentativas. Tente novamente mais tarde.",
   };
 
-  console.log("erro ->", errorCode);
-
   return map[errorCode] || "Erro desconhecido. Tente novamente.";
 }
 
@@ -61,13 +59,10 @@ const syncUserWithBackend = async (
   name?: string
 ) => {
   try {
-    console.log("🔄 Sincronizando usuário com backend...");
-
     // Fazer chamada para GET /api/users/me (incluindo nome se fornecido)
     const response = await authService.syncUserWithBackend(name);
 
     if (response.success) {
-      console.log("✅ Usuário sincronizado com sucesso:", response.data);
       return response.data;
     } else {
       console.warn("⚠️ Falha na sincronização do usuário:", response.error);
@@ -129,7 +124,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await syncUserWithBackend(userCredential.user, idToken);
     } catch (error: any) {
       // Método 2: Fallback usando API direta
-      console.log("Tentando login direto via API...");
+
       try {
         const response = await authService.loginWithEmailPassword({
           email,
@@ -177,12 +172,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setToken(idToken);
       authService.setToken(idToken);
 
-      console.log("✅ Login com Google realizado com sucesso:", {
-        name: userCredential.user.displayName,
-        email: userCredential.user.email,
-        photo: userCredential.user.photoURL,
-      });
-
       // Sincronizar com backend após login com Google
       await syncUserWithBackend(userCredential.user, idToken);
     } catch (error: any) {
@@ -192,13 +181,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async () => {
-    await signOut(auth);
-    setUser(null);
-    setToken(null);
-    authService.logout();
+    try {
+      // Limpar token primeiro para evitar chamadas de API durante o logout
+      authService.logout();
+      setToken(null);
+      
+      // Depois fazer logout do Firebase
+      await signOut(auth);
+      setUser(null);
 
-    // Redirecionar para a página de login
-    router.push("/");
+      // Redirecionar para a página de login
+      router.push("/");
+    } catch (error) {
+      console.error("Erro durante logout:", error);
+      // Mesmo com erro, limpar dados locais
+      authService.logout();
+      setUser(null);
+      setToken(null);
+      router.push("/");
+    }
   };
 
   return (

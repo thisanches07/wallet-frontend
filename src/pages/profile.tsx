@@ -19,15 +19,15 @@ const Profile = () => {
       }
 
       try {
-        console.log("🔍 Buscando dados do usuário no backend...");
+
         const response = await authService.getUserProfile();
-        console.log("📊 Resposta do backend:", response);
-        
+
+
         if (response.success && response.data) {
-          console.log("✅ Dados do backend encontrados:", response.data);
+
           setUserBackendData(response.data);
         } else {
-          console.log("⚠️ Nenhum dado encontrado no backend");
+
         }
       } catch (error) {
         console.error("❌ Erro ao buscar dados do usuário:", error);
@@ -41,7 +41,11 @@ const Profile = () => {
 
   // Dados do usuário com fallbacks apropriados
   const userProfile = {
-    name: userBackendData?.name || user?.displayName || user?.email?.split("@")[0] || "Usuário",
+    name:
+      userBackendData?.name ||
+      user?.displayName ||
+      user?.email?.split("@")[0] ||
+      "Usuário",
     email: userBackendData?.email || user?.email || "usuario@email.com",
     plan: userBackendData?.plan || "Plano Básico",
     joinDate: "Janeiro 2024",
@@ -91,7 +95,7 @@ const Profile = () => {
   const handlePlanChange = (planId: string) => {
     setSelectedPlan(planId);
     // Aqui você implementaria a lógica de mudança de plano
-    console.log("Mudança de plano solicitada:", planId);
+
   };
 
   if (loading) {

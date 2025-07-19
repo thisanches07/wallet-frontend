@@ -15,7 +15,6 @@ import {
 import { SummaryProvider } from "@/context/SummaryContext";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardData } from "@/types/dashboard";
-import { TrendingUp } from "lucide-react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
@@ -136,7 +135,7 @@ function DashboardContent() {
                 </div>
 
                 {/* Insights e Recomendações */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6 animate-slide-in [animation-delay:200ms]">
+                {/* <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6 animate-slide-in [animation-delay:200ms]">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
                       <TrendingUp className="w-6 h-6 text-white" />
@@ -167,7 +166,7 @@ function DashboardContent() {
                       </div>
                     </div>
                   </div>
-                </div>
+                 </div> */}
               </div>
 
               {/* Sidebar direita */}

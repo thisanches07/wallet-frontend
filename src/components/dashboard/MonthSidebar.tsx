@@ -42,7 +42,7 @@ export function MonthSidebar({ selected, onSelect }: Props) {
   ];
 
   const monthsToDisplay = months.slice(0, currentMonth).reverse();
-  console.log("meses a serem exibidos ->", monthsToDisplay);
+
 
   return (
     <aside className="w-64 bg-white/80 backdrop-blur-sm border-r border-neutral-200/50 h-full shadow-lg">
@@ -155,7 +155,7 @@ export function MonthSidebar({ selected, onSelect }: Props) {
         ) : (
           <div className="space-y-1">
             {monthsToDisplay.map((month, index) => {
-              console.log("mes ->", month, "index ->", index);
+
               const realIndex = currentMonth - (index + 1);
               const monthData = getMonthData(realIndex);
               const income = monthData?.totalIncomes || 0;

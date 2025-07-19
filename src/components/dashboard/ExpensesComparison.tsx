@@ -1,7 +1,7 @@
+import { useMonthlyData } from "@/context/MonthlyDataContext";
 import { useSelectedMonth } from "@/context/SelectedMonthContext";
-import { useExpenses, useIncomeAllocation } from "@/hooks/useApi";
+import { useIncomeAllocation } from "@/hooks/useApi";
 import { Expense } from "@/types/expense";
-import { convertApiExpenseToExpense } from "@/utils/expenseUtils";
 import { Eye, FileText, TrendingDown, TrendingUp, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -26,103 +26,56 @@ export function ExpensesComparison() {
   const [allocationData, setAllocationData] = useState<AllocationData | null>(
     null
   );
-  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [comparisonData, setComparisonData] = useState<ComparisonData[]>([]);
-  const [loading, setLoading] = useState(true);
 
   const { getAllocation } = useIncomeAllocation();
-  const { getExpenses } = useExpenses();
   const { selectedMonth, selectedYear } = useSelectedMonth();
 
-  // Carregar dados da API
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
+  // Usar o MonthlyDataContext para obter as despesas
+  const monthData = useMonthlyData(selectedMonth, selectedYear);
+  const { expenses, loading: expensesLoading } = monthData;
 
-        // Carregar alocação de renda
+  // Carregar dados da alocação
+  useEffect(() => {
+    const loadAllocationData = async () => {
+      try {
+        // Verificar se há token antes de fazer a chamada
+        const { authService } = await import("@/services/authService");
+        const token = authService.getToken();
+        
+        if (!token) {
+          setAllocationData(null);
+          return;
+        }
+
         const allocation = (await getAllocation()) as AllocationData;
         setAllocationData(allocation);
-
-        // Carregar despesas do mês selecionado (month no contexto é 0-based, API espera 1-based)
-        const monthlyExpenses = await getExpenses({
-          month: selectedMonth + 1,
-          year: selectedYear,
-        });
-
-        if (Array.isArray(monthlyExpenses)) {
-          const convertedExpenses = monthlyExpenses.map(
-            convertApiExpenseToExpense
-          );
-          setExpenses(convertedExpenses);
-        } else {
-          setExpenses([]);
-        }
       } catch (error) {
-        console.error("Erro ao carregar dados:", error);
-        setExpenses([]);
+        console.error("Erro ao carregar alocação:", error);
         setAllocationData(null);
-      } finally {
-        setLoading(false);
       }
     };
 
-    loadData();
-  }, [getAllocation, getExpenses, selectedMonth, selectedYear]);
+    loadAllocationData();
+  }, [getAllocation]);
 
-  // Escutar mudanças na alocação de renda e despesas
+  // Escutar mudanças na alocação de renda
   useEffect(() => {
-    const handleAllocationUpdate = () => {
-      // Recarregar apenas os dados de alocação quando houver mudança
-      const reloadAllocation = async () => {
-        try {
-          const allocation = (await getAllocation()) as AllocationData;
-          setAllocationData(allocation);
-        } catch (error) {
-          console.error("Erro ao recarregar alocação:", error);
-        }
-      };
-
-      reloadAllocation();
+    const handleAllocationUpdate = async () => {
+      try {
+        const allocation = (await getAllocation()) as AllocationData;
+        setAllocationData(allocation);
+      } catch (error) {
+        console.error("Erro ao recarregar alocação:", error);
+      }
     };
 
-    const handleExpenseChange = () => {
-      // Recarregar despesas quando houver mudança
-      const reloadExpenses = async () => {
-        try {
-          const monthlyExpenses = await getExpenses({
-            month: selectedMonth + 1,
-            year: selectedYear,
-          });
-
-          if (Array.isArray(monthlyExpenses)) {
-            const convertedExpenses = monthlyExpenses.map(
-              convertApiExpenseToExpense
-            );
-            setExpenses(convertedExpenses);
-          } else {
-            setExpenses([]);
-          }
-        } catch (error) {
-          console.error("Erro ao recarregar despesas:", error);
-        }
-      };
-
-      reloadExpenses();
-    };
-
-    // Escutar eventos de mudança
     window.addEventListener("allocationUpdated", handleAllocationUpdate);
-    window.addEventListener("expenseAdded", handleExpenseChange);
-    window.addEventListener("expenseDeleted", handleExpenseChange);
 
-    // Cleanup
     return () => {
       window.removeEventListener("allocationUpdated", handleAllocationUpdate);
-      window.removeEventListener("expenseAdded", handleExpenseChange);
-      window.removeEventListener("expenseDeleted", handleExpenseChange);
     };
-  }, [getAllocation, getExpenses, selectedMonth, selectedYear]);
+  }, [getAllocation]);
 
   // Processar dados de comparação
   useEffect(() => {
@@ -132,17 +85,21 @@ export function ExpensesComparison() {
     }
 
     // Calcular gastos reais por categoria
-    const gastosPorCategoria = expenses.reduce((acc, expense) => {
-      const categoria = expense.categoria.toLowerCase();
-      acc[categoria] = (acc[categoria] || 0) + expense.valor;
-      return acc;
-    }, {} as Record<string, number>);
+    const gastosPorCategoria = expenses.reduce(
+      (acc: Record<string, number>, expense: Expense) => {
+        const categoria = expense.categoria.toLowerCase();
+        const valor = Number(expense.valor) || 0; // Garantir que é número
+        acc[categoria] = (acc[categoria] || 0) + valor;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     // Separar lazer do resto das despesas
     const gastoLazer = gastosPorCategoria["lazer"] || 0;
     const gastoOutrasDespesas = Object.entries(gastosPorCategoria)
       .filter(([categoria]) => categoria !== "lazer")
-      .reduce((acc, [, valor]) => acc + valor, 0);
+      .reduce((acc, [, valor]) => acc + Number(valor), 0); // Garantir que é número
 
     // Criar dados de comparação
     const comparison: ComparisonData[] = [
@@ -162,20 +119,20 @@ export function ExpensesComparison() {
   }, [allocationData, expenses]);
 
   const totalIndicado = comparisonData.reduce(
-    (acc: number, item: ComparisonData) => acc + (item.indicado || 0),
+    (acc: number, item: ComparisonData) => acc + Number(item.indicado || 0),
     0
   );
   const totalGasto = comparisonData.reduce(
-    (acc: number, item: ComparisonData) => acc + (item.gasto || 0),
+    (acc: number, item: ComparisonData) => acc + Number(item.gasto || 0),
     0
   );
-  const totalDiff = totalGasto - totalIndicado;
+  const totalDiff = Number(totalGasto) - Number(totalIndicado);
   const totalPercentage =
     totalIndicado > 0
       ? ((Math.abs(totalDiff) / totalIndicado) * 100).toFixed(1)
       : "0";
 
-  if (loading) {
+  if (expensesLoading || !allocationData) {
     return (
       <div className="bg-white border border-neutral-200 p-6 rounded-card shadow-card transition-all duration-300">
         <div className="flex items-center gap-3 mb-6">

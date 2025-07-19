@@ -64,40 +64,58 @@ const useUserProfile = (firebaseUser: any) => {
     // Função para buscar dados adicionais do backend
     const fetchUserProfile = async () => {
       try {
-        console.log("🔍 Firebase User no Topbar:", {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL
-        });
-        
         // Importar o authService dinamicamente para evitar circular imports
         const { authService } = await import("@/services/authService");
-        
-        // Buscar dados do backend primeiro
-        const backendResponse = await authService.getUserProfile();
-        console.log("📊 Resposta do backend no Topbar:", backendResponse);
-        
-        let profile: UserInfo;        if (backendResponse.success && backendResponse.data) {
-          // Usar dados do backend se disponíveis
-          const backendData = backendResponse.data as BackendUserData;
-          profile = {
-            name: backendData.name || getUserDisplayName(firebaseUser),
-            email: backendData.email || firebaseUser.email || "",
-            avatar: firebaseUser.photoURL || undefined,
-            plan: (backendData.plan as "Free" | "Pro" | "Premium") || "Free",
-          };
-        } else {
-          // Fallback para dados do Firebase
-          profile = {
+
+        // Verificar se há token antes de fazer a chamada
+        const token = authService.getToken();
+        if (!token) {
+          // Se não há token, usar apenas dados do Firebase
+          const profile: UserInfo = {
             name: getUserDisplayName(firebaseUser),
             email: firebaseUser.email || "",
             avatar: firebaseUser.photoURL || undefined,
             plan: "Free",
           };
+          setUserProfile(profile);
+          return;
         }
 
-        setUserProfile(profile);
+        // Buscar dados do backend primeiro (apenas se há token)
+        try {
+          const backendResponse = await authService.getUserProfile();
+
+          let profile: UserInfo;
+          if (backendResponse.success && backendResponse.data) {
+            // Usar dados do backend se disponíveis
+            const backendData = backendResponse.data as BackendUserData;
+            profile = {
+              name: backendData.name || getUserDisplayName(firebaseUser),
+              email: backendData.email || firebaseUser.email || "",
+              avatar: firebaseUser.photoURL || undefined,
+              plan: (backendData.plan as "Free" | "Pro" | "Premium") || "Free",
+            };
+          } else {
+            // Fallback para dados do Firebase
+            profile = {
+              name: getUserDisplayName(firebaseUser),
+              email: firebaseUser.email || "",
+              avatar: firebaseUser.photoURL || undefined,
+              plan: "Free",
+            };
+          }
+
+          setUserProfile(profile);
+        } catch (apiError) {
+          // Se falhou a chamada da API, usar dados do Firebase silenciosamente
+          const profile: UserInfo = {
+            name: getUserDisplayName(firebaseUser),
+            email: firebaseUser.email || "",
+            avatar: firebaseUser.photoURL || undefined,
+            plan: "Free",
+          };
+          setUserProfile(profile);
+        }
       } catch (error) {
         console.error("Erro ao buscar perfil do usuário:", error);
         // Fallback para dados do Firebase

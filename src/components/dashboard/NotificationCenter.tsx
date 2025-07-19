@@ -119,13 +119,6 @@ export function NotificationCenter() {
       0
     );
 
-    console.log("📊 Dados financeiros do mês:", {
-      gastos: gastosReais,
-      receitas: receitasReais,
-      despesas: expenses.length,
-      rendas: incomes.length,
-    });
-
     // Verificar configuração inicial
     const planejamento = localStorage.getItem("planejamentoFinanceiro");
     if (!planejamento) {
@@ -143,12 +136,6 @@ export function NotificationCenter() {
 
       // Verificar se ultrapassou o orçamento usando dados reais
       if (gastosReais > data.limitesGastos) {
-        console.log(
-          "gastos reais ->",
-          gastosReais,
-          "limitesGastos ->",
-          data.limitesGastos
-        );
         const excesso = gastosReais - data.limitesGastos;
         newNotifications.push({
           id: "budget-exceeded",

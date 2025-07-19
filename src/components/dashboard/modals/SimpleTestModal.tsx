@@ -6,10 +6,10 @@ interface SimpleModalProps {
 }
 
 export function SimpleTestModal({ onClose, onAdd }: SimpleModalProps) {
-  console.log("SimpleTestModal renderizado!");
+
 
   const handleSubmit = () => {
-    console.log("Submit do modal simples!");
+
     alert("Modal simples funcionando!");
     onAdd({ teste: "dados" });
   };

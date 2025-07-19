@@ -86,10 +86,6 @@ export function DashboardHeader({ selectedMonth }: Props) {
 
         // Limpar URL
         window.URL.revokeObjectURL(url);
-
-        console.log(
-          `Relatório completo de ${monthName}/${selectedYear} exportado com sucesso!`
-        );
       } else {
         throw new Error("Arquivo vazio ou resposta inválida da API");
       }
@@ -160,10 +156,6 @@ export function DashboardHeader({ selectedMonth }: Props) {
 
         // Limpar URL
         window.URL.revokeObjectURL(url);
-
-        console.log(
-          `Relatório de ${monthName}/${selectedYear} exportado com sucesso!`
-        );
 
         // Opcional: mostrar notificação de sucesso
         // toast.success(`Relatório de ${monthName}/${selectedYear} exportado com sucesso!`);

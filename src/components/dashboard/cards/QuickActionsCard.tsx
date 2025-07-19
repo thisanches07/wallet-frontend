@@ -67,11 +67,11 @@ export default function QuickActionsCard() {
       {showExpenseModal && (
         <AddExpenseModal
           onClose={() => {
-            console.log("Modal fechado");
+
             setShowExpenseModal(false);
           }}
           onAdd={(expense) => {
-            console.log("Função onAdd chamada com:", expense);
+
 
             // Salvar no localStorage
             const existingExpenses = JSON.parse(
@@ -91,8 +91,8 @@ export default function QuickActionsCard() {
             const newTotal = currentTotal + expense.valor;
             localStorage.setItem("gastosTotal", newTotal.toString());
 
-            console.log("Despesa salva:", newExpense);
-            console.log("Novo total de gastos:", newTotal);
+
+
             setShowExpenseModal(false);
           }}
         />
@@ -102,7 +102,7 @@ export default function QuickActionsCard() {
         <AddIncomeModal
           onClose={() => setShowIncomeModal(false)}
           onAdd={(income) => {
-            console.log("Nova receita adicionada:", income);
+
             setShowIncomeModal(false);
           }}
         />
@@ -112,7 +112,7 @@ export default function QuickActionsCard() {
         <AddRecurringExpenseModal
           onClose={() => setShowRecurringExpenseModal(false)}
           onAdd={(expense) => {
-            console.log("Nova despesa recorrente adicionada:", expense);
+
             setShowRecurringExpenseModal(false);
           }}
         />
