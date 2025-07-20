@@ -28,19 +28,16 @@ interface AuthContextProps {
 
 export function getFriendlyFirebaseError(errorCode: string): string {
   const map: Record<string, string> = {
-    "Firebase: Error (auth/invalid-email).": "Email e/ou senha inválidos.",
-    "Firebase: Error (auth/user-not-found).": "Usuário não encontrado.",
-    "Firebase: Error (auth/wrong-password).": "Email e/ou senha inválidos.",
-    "Firebase: Error (auth/missing-password).": "Email e/ou senha inválidos.",
+    "auth/invalid-email": "Email e/ou senha inválidos.",
+    "auth/user-not-found": "Usuário não encontrado.",
+    "auth/wrong-password": "Email e/ou senha inválidos.",
+    "auth/missing-password": "Email e/ou senha inválidos.",
     "Firebase: Password should be at least 6 characters (auth/weak-password)":
       "Senha deve possuir pelo menos 6 caracteres",
-    "Firebase: Error (auth/email-already-in-use).":
-      "Este e-mail já está em uso.",
-    "Firebase: Error (auth/weak-password).":
-      "A senha deve ter no mínimo 6 caracteres.",
-    "Firebase: Error (auth/invalid-credential).": "Email e/ou senha inválidos.",
-    "Firebase: Error (auth/popup-closed-by-user).":
-      "Login com o Google foi cancelado.",
+    "auth/email-already-in-use": "Este e-mail já está em uso.",
+    "auth/weak-password": "A senha deve ter no mínimo 6 caracteres.",
+    "auth/invalid-credential": "Email e/ou senha inválidos.",
+    "auth/popup-closed-by-user": "Login com o Google foi cancelado.",
     INVALID_EMAIL: "Email inválido.",
     EMAIL_NOT_FOUND: "Email não encontrado.",
     INVALID_PASSWORD: "Senha incorreta.",
@@ -48,6 +45,8 @@ export function getFriendlyFirebaseError(errorCode: string): string {
     TOO_MANY_ATTEMPTS_TRY_LATER:
       "Muitas tentativas. Tente novamente mais tarde.",
   };
+
+  console.log("Erro Firebase:", errorCode);
 
   return map[errorCode] || "Erro desconhecido. Tente novamente.";
 }
@@ -185,7 +184,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Limpar token primeiro para evitar chamadas de API durante o logout
       authService.logout();
       setToken(null);
-      
+
       // Depois fazer logout do Firebase
       await signOut(auth);
       setUser(null);
