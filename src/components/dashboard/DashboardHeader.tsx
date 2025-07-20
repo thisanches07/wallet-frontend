@@ -1,7 +1,9 @@
 import { useSelectedMonth } from "@/context/SelectedMonthContext";
 import { useApi } from "@/hooks/useApi";
+import { ConnectedBank } from "@/hooks/useBankConnections";
 import { BarChart3, Calendar, Download, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
+import { BankConnectionButton } from "./BankConnectionButton";
 
 interface Props {
   selectedMonth: string;
@@ -40,6 +42,13 @@ export function DashboardHeader({ selectedMonth }: Props) {
       clearInterval(interval);
     };
   }, []);
+
+  const handleBankConnection = (bank: ConnectedBank) => {
+    // Aqui você pode adicionar lógica adicional quando um banco é conectado
+    console.log("Novo banco conectado:", bank);
+
+    // Exemplo: atualizar dados do dashboard, mostrar notificação, etc.
+  };
 
   const handleExportComplete = async () => {
     try {
@@ -231,6 +240,9 @@ export function DashboardHeader({ selectedMonth }: Props) {
 
             {/* Seção de ações reorganizada */}
             <div className="flex items-center gap-4">
+              {/* Botão de Conexão Bancária */}
+              <BankConnectionButton onConnect={handleBankConnection} />
+
               {/* Botão secundário */}
               <button
                 onClick={handleExport}
