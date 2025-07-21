@@ -146,7 +146,7 @@ export function useBankConnections() {
     try {
       // URL base do seu backend
       const BACKEND_URL =
-        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
       console.log("🔄 Iniciando processo de conexão bancária...");
       console.log("📡 Backend URL:", BACKEND_URL);

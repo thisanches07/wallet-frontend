@@ -24,6 +24,6 @@ googleProvider.addScope("profile");
 
 // API Configuration
 export const API_CONFIG = {
-  backendUrl: process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001",
+  backendUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001",
   firebaseSignInUrl: process.env.NEXT_PUBLIC_FIREBASE_SIGNIN_URL,
 };
