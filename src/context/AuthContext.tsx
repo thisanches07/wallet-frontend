@@ -80,10 +80,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
 
   useEffect(() => {
-    // Verificar se já existe token salvo
+    // Limpar qualquer token existente primeiro para evitar loops
     const savedToken = authService.getToken();
     if (savedToken) {
-      setToken(savedToken);
+      console.log("🔍 Token salvo encontrado, removendo para garantir estado limpo");
+      authService.removeToken();
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -140,29 +141,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Sincronizar com backend após login
       await syncUserWithBackend(userCredential.user, idToken);
     } catch (error: any) {
-      // Método 2: Fallback usando API direta
-
-      try {
-        const response = await authService.loginWithEmailPassword({
-          email,
-          password,
-        });
-        setToken(response.idToken);
-        authService.setToken(response.idToken);
-
-        // Criar um objeto user mock para manter compatibilidade
-        const mockUser = {
-          uid: response.localId,
-          email: response.email,
-          displayName: response.displayName || null,
-        };
-        setUser(mockUser);
-
-        // Sincronizar com backend após login direto
-        await syncUserWithBackend(mockUser, response.idToken);
-      } catch (apiError) {
-        throw error; // Lançar o erro original do Firebase
-      }
+      // Remover fallback de mock user - usar apenas Firebase SDK
+      throw error; // Lançar o erro original do Firebase
     }
   };
 
@@ -199,22 +179,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     try {
-      // Limpar token primeiro para evitar chamadas de API durante o logout
-      authService.logout();
-      setToken(null);
-
-      // Depois fazer logout do Firebase
-      await signOut(auth);
+      console.log("🚪 Iniciando logout...");
+      
+      // 1. Limpar estado local PRIMEIRO para evitar mais requisições
       setUser(null);
+      setToken(null);
+      authService.removeToken();
+      
+      // 2. Limpar todo o cache
+      authService.logout();
+      
+      // 3. Fazer logout do Firebase (pode falhar, mas não é crítico)
+      try {
+        await signOut(auth);
+        console.log("✅ Firebase logout realizado");
+      } catch (firebaseError) {
+        console.warn("⚠️ Erro no logout do Firebase (não crítico):", firebaseError);
+      }
 
-      // Redirecionar para a página de login
+      // 4. Redirecionar para a página de login
+      console.log("🔄 Redirecionando para login...");
       router.push("/");
     } catch (error) {
-      console.error("Erro durante logout:", error);
-      // Mesmo com erro, limpar dados locais
-      authService.logout();
+      console.error("❌ Erro durante logout:", error);
+      // Mesmo com erro, garantir que tudo seja limpo
       setUser(null);
       setToken(null);
+      authService.logout();
       router.push("/");
     }
   };

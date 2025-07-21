@@ -3,6 +3,7 @@ import { Expense } from "@/types/expense";
 import { filterByMonth } from "@/utils/dateUtils";
 import { convertApiExpenseToExpense } from "@/utils/expenseUtils";
 import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "./useAuth";
 import { useApi } from "./useApi";
 
 interface IncomeData {
@@ -25,6 +26,7 @@ const dataCache = new Map<string, MonthlyData>();
 export function useMonthlyData() {
   const { selectedMonth, selectedYear, isCurrentMonth } = useSelectedMonth();
   const { getExpenses, getIncomes } = useApi();
+  const { user, token } = useAuth();
 
   const cacheKey = `${selectedYear}-${selectedMonth}`;
 
@@ -43,6 +45,18 @@ export function useMonthlyData() {
   });
 
   const loadData = useCallback(async () => {
+    // Não fazer requisição se não há usuário autenticado
+    if (!user || !token) {
+      const emptyData: MonthlyData = {
+        expenses: [],
+        incomes: [],
+        loading: false,
+        error: null,
+      };
+      setData(emptyData);
+      return;
+    }
+
     // Se já temos dados no cache e não estamos carregando, não fazer nova requisição
     const cachedData = dataCache.get(cacheKey);
     if (cachedData && !cachedData.loading) {
@@ -60,8 +74,8 @@ export function useMonthlyData() {
       ]);
 
       const newData: MonthlyData = {
-        expenses: expensesResult,
-        incomes: incomesResult,
+        expenses: expensesResult || [],
+        incomes: incomesResult || [],
         loading: false,
         error: null,
       };
@@ -70,18 +84,30 @@ export function useMonthlyData() {
       dataCache.set(cacheKey, newData);
       setData(newData);
     } catch (error) {
-      const errorData: MonthlyData = {
-        expenses: [],
-        incomes: [],
-        loading: false,
-        error:
-          error instanceof Error ? error.message : "Erro ao carregar dados",
-      };
+      // Só tratar como erro se o usuário ainda está autenticado
+      if (user && token) {
+        const errorData: MonthlyData = {
+          expenses: [],
+          incomes: [],
+          loading: false,
+          error:
+            error instanceof Error ? error.message : "Erro ao carregar dados",
+        };
 
-      dataCache.set(cacheKey, errorData);
-      setData(errorData);
+        dataCache.set(cacheKey, errorData);
+        setData(errorData);
+      } else {
+        // Se não há usuário, apenas definir estado vazio silenciosamente
+        const emptyData: MonthlyData = {
+          expenses: [],
+          incomes: [],
+          loading: false,
+          error: null,
+        };
+        setData(emptyData);
+      }
     }
-  }, [cacheKey, selectedMonth, selectedYear]);
+  }, [cacheKey, selectedMonth, selectedYear, user, token, getExpenses, getIncomes]);
 
   const loadExpenses = async (): Promise<Expense[]> => {
     try {
@@ -91,11 +117,22 @@ export function useMonthlyData() {
         year: selectedYear,
       });
 
+      // Se retornou null (usuário não autenticado), retornar array vazio
+      if (apiExpenses === null) {
+        return [];
+      }
+
       if (Array.isArray(apiExpenses)) {
         return apiExpenses.map(convertApiExpenseToExpense);
       } else {
         // Fallback: buscar todas e filtrar localmente
         const allExpenses = await getExpenses();
+        
+        // Se retornou null, retornar array vazio
+        if (allExpenses === null) {
+          return [];
+        }
+        
         if (Array.isArray(allExpenses)) {
           const convertedExpenses = allExpenses.map(convertApiExpenseToExpense);
           return filterByMonth(convertedExpenses, selectedMonth, selectedYear);
@@ -116,11 +153,22 @@ export function useMonthlyData() {
         year: selectedYear,
       });
 
+      // Se retornou null (usuário não autenticado), retornar array vazio
+      if (apiIncomes === null) {
+        return [];
+      }
+
       if (Array.isArray(apiIncomes)) {
         return apiIncomes;
       } else {
         // Fallback: buscar todas e filtrar localmente
         const allIncomes = await getIncomes();
+        
+        // Se retornou null, retornar array vazio
+        if (allIncomes === null) {
+          return [];
+        }
+        
         if (Array.isArray(allIncomes)) {
           return filterByMonth(allIncomes, selectedMonth, selectedYear);
         }

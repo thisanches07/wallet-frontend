@@ -20,8 +20,19 @@ export default function LoginPage() {
   const { login, signup, googleLogin, loading, user } = useAuth();
   const router = useRouter();
 
+  // Função para limpar cache completamente
+  const clearAllCache = () => {
+    console.log("🧹 Limpando todo o cache...");
+    localStorage.clear();
+    sessionStorage.clear();
+    location.reload();
+  };
+
   useEffect(() => {
-    if (!loading && user) router.push("/dashboard");
+    if (!loading && user) {
+      console.log("🔄 Usuário encontrado, redirecionando para dashboard...", user);
+      router.push("/dashboard");
+    }
   }, [loading, user, router]);
 
   const handleAction = async (action: "login" | "signup" | "google") => {

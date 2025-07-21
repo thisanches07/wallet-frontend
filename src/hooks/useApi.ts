@@ -4,16 +4,27 @@ import { useCallback, useMemo } from "react";
 import { useAuth } from "./useAuth";
 
 export function useApi() {
-  const { logout } = useAuth();
+  const { logout, user, token } = useAuth();
 
   const apiCall = useCallback(
     async <T>(endpoint: string, options: RequestInit = {}) => {
+      // Se não há usuário ou token, retornar null silenciosamente
+      if (!user || !token) {
+        console.log("🔒 Tentativa de requisição sem autenticação - ignorando:", endpoint);
+        return null;
+      }
+
       const response = await authService.apiCall<T>(endpoint, options);
 
       // Se retornar erro de autenticação, fazer logout automático
-      if (!response.success && response.error?.includes("Unauthorized")) {
+      if (!response.success && (
+        response.error?.includes("Unauthorized") || 
+        response.error?.includes("Token ausente") ||
+        response.error?.includes("não autenticado")
+      )) {
+        console.log("🔐 Sessão inválida detectada, fazendo logout...");
         logout();
-        throw new Error("Sessão expirada. Faça login novamente.");
+        return null;
       }
 
       if (!response.success) {
@@ -22,7 +33,7 @@ export function useApi() {
 
       return response.data;
     },
-    [logout]
+    [logout, user, token]
   );
 
   // Métodos específicos para sua API

@@ -32,21 +32,8 @@ export default function DashboardPage() {
 
 function DashboardContent() {
   const { selectedMonth, setSelectedMonth } = useSelectedMonth();
-  const mockData: DashboardData = {
-    income: 5000,
-    expenses: 4200,
-    invested: 400,
-    categories: [
-      { name: "Essenciais", value: 65 },
-      { name: "Lazer", value: 20 },
-      { name: "Investimentos", value: 15 },
-    ],
-    recentTransactions: [
-      { date: "2025-05-25", type: "Renda", value: 4800, category: "Salário" },
-      { date: "2025-05-26", type: "Despesa", value: 1200, category: "Aluguel" },
-    ],
-  };
-
+  
+  // Remover mock data - usar apenas dados reais do backend
   const { user, loading } = useAuth();
   const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
@@ -69,7 +56,17 @@ function DashboardContent() {
   useEffect(() => {
     if (!loading) {
       if (user) {
-        setData(mockData);
+        // TODO: Carregar dados reais do backend
+        // setData(realDataFromBackend);
+        
+        // Por enquanto, mostrar dashboard vazio para usuários reais
+        setData({
+          income: 0,
+          expenses: 0,
+          invested: 0,
+          categories: [],
+          recentTransactions: [],
+        });
       } else {
         router.push("/");
       }

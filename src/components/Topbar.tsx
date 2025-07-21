@@ -159,11 +159,7 @@ export function Topbar() {
   // Usar o hook personalizado para dados do usuário
   const userInfo = useUserProfile(user);
 
-  // Se não há usuário autenticado, não renderizar o componente
-  if (!user || !userInfo) {
-    return null;
-  }
-
+  // SEMPRE chamar useEffect primeiro, antes de qualquer return condicional
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -186,6 +182,11 @@ export function Topbar() {
       console.error("Erro ao fazer logout:", error);
     }
   };
+
+  // Se não há usuário autenticado, não renderizar o componente
+  if (!user || !userInfo) {
+    return null;
+  }
 
   const getPlanColor = (plan: string) => {
     switch (plan) {

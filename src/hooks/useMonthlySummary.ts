@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "./useAuth";
 import { useApi } from "./useApi";
 
 export interface MonthlySummaryData {
@@ -22,20 +23,39 @@ export function useMonthlySummary(year: number) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const api = useApi();
+  const { user, token } = useAuth();
 
   const fetchSummary = useCallback(async () => {
+    // Não fazer requisição se não há usuário autenticado
+    if (!user || !token) {
+      setLoading(false);
+      setSummaryData([]);
+      setError(null);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
       const response = await api.getMonthlySummary(year);
+      
+      // Se a resposta for null (usuário não autenticado), apenas parar silenciosamente
+      if (response === null) {
+        setLoading(false);
+        return;
+      }
+      
       setSummaryData(response as MonthlySummaryData[]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao buscar dados");
-      console.error("Erro ao buscar summary mensal:", err);
+      // Só logar erro se não for problema de autenticação
+      if (user && token) {
+        setError(err instanceof Error ? err.message : "Erro ao buscar dados");
+        console.error("Erro ao buscar summary mensal:", err);
+      }
     } finally {
       setLoading(false);
     }
-  }, [api, year]);
+  }, [api, year, user, token]);
 
   useEffect(() => {
     fetchSummary();

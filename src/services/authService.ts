@@ -24,6 +24,7 @@ export interface ApiResponse<T> {
 class AuthService {
   private baseUrl = API_CONFIG.backendUrl;
   private firebaseSignInUrl = API_CONFIG.firebaseSignInUrl;
+  private abortController: AbortController | null = null;
 
   // Armazenar token localmente
   setToken(token: string) {
@@ -36,6 +37,14 @@ class AuthService {
 
   removeToken() {
     localStorage.removeItem("authToken");
+  }
+
+  // Cancelar todas as requisições em andamento
+  cancelAllRequests() {
+    if (this.abortController) {
+      this.abortController.abort();
+    }
+    this.abortController = new AbortController();
   }
 
   // Login direto com Firebase
@@ -78,16 +87,30 @@ class AuthService {
   ): Promise<ApiResponse<T>> {
     const token = this.getToken();
 
+    // Se não há token, retornar erro imediatamente sem fazer a requisição
+    if (!token) {
+      return {
+        success: false,
+        error: "Token ausente - usuário não autenticado",
+      };
+    }
+
     const headers = {
       "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }),
+      Authorization: `Bearer ${token}`,
       ...options.headers,
     };
 
     try {
+      // Usar o AbortController para cancelar requisições
+      if (!this.abortController) {
+        this.abortController = new AbortController();
+      }
+
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         ...options,
         headers,
+        signal: this.abortController.signal,
       });
 
       // Para respostas 204 (No Content), não há JSON para fazer parse
@@ -118,6 +141,14 @@ class AuthService {
         data,
       };
     } catch (error) {
+      // Se a requisição foi cancelada, não tratar como erro
+      if (error instanceof Error && error.name === 'AbortError') {
+        return {
+          success: false,
+          error: "Requisição cancelada",
+        };
+      }
+
       return {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -154,10 +185,31 @@ class AuthService {
 
   // Logout
   logout() {
+    // Cancelar todas as requisições em andamento
+    this.cancelAllRequests();
+    
     this.removeToken();
     // Limpar qualquer cache adicional se necessário
     localStorage.removeItem("userProfile");
     localStorage.removeItem("backendUserData");
+    
+    // Limpar TODOS os dados relacionados ao Firebase e usuário
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('userProfile_') || 
+          key.startsWith('firebase:') || 
+          key.includes('auth') ||
+          key.includes('user')) {
+        localStorage.removeItem(key);
+      }
+    });
+  }
+
+  // Força logout completo
+  forceLogout() {
+    console.log("🧹 Forçando logout completo...");
+    this.cancelAllRequests();
+    localStorage.clear();
+    sessionStorage.clear();
   }
 }
 
