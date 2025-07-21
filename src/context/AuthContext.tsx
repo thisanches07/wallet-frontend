@@ -87,7 +87,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
+      // Limpar estado anterior imediatamente quando há mudança de usuário
+      if (!firebaseUser) {
+        setUser(null);
+        setToken(null);
+        authService.removeToken();
+        setLoading(false);
+        return;
+      }
+
+      // Se o UID mudou, limpar dados do usuário anterior
+      if (user && user.uid !== firebaseUser.uid) {
+        setUser(null);
+        setToken(null);
+        authService.removeToken();
+      }
+
+      try {
         const idToken = await firebaseUser.getIdToken();
         setUser(firebaseUser);
         setToken(idToken);
@@ -95,11 +111,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         // Sincronizar com backend após autenticação
         await syncUserWithBackend(firebaseUser, idToken);
-      } else {
+      } catch (error) {
+        console.error("Erro ao obter token:", error);
         setUser(null);
         setToken(null);
         authService.removeToken();
       }
+      
       setLoading(false);
     });
 

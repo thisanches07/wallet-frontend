@@ -56,14 +56,28 @@ const useUserProfile = (firebaseUser: any) => {
   const [userProfile, setUserProfile] = useState<UserInfo | null>(null);
 
   useEffect(() => {
+    // Limpar dados quando não há usuário ou quando o usuário muda
     if (!firebaseUser) {
       setUserProfile(null);
       return;
     }
 
+    // Limpar dados do usuário anterior quando trocar de usuário
+    setUserProfile(null);
+
     // Função para buscar dados adicionais do backend
     const fetchUserProfile = async () => {
       try {
+        // Criar uma chave única baseada no UID do usuário
+        const userKey = `userProfile_${firebaseUser.uid}`;
+        
+        // Limpar cache de outros usuários
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('userProfile_') && key !== userKey) {
+            localStorage.removeItem(key);
+          }
+        });
+
         // Importar o authService dinamicamente para evitar circular imports
         const { authService } = await import("@/services/authService");
 
@@ -130,7 +144,7 @@ const useUserProfile = (firebaseUser: any) => {
     };
 
     fetchUserProfile();
-  }, [firebaseUser]);
+  }, [firebaseUser?.uid]); // Dependência específica no UID do usuário
 
   return userProfile;
 };
@@ -145,17 +159,10 @@ export function Topbar() {
   // Usar o hook personalizado para dados do usuário
   const userInfo = useUserProfile(user);
 
-  // Usuário padrão para quando não há login
-  const defaultUser: UserInfo = {
-    name: "Usuário Demo",
-    email: "demo@carteira-ia.com",
-    avatar: undefined,
-    plan: "Free",
-  };
-
-  // Usar userInfo se disponível, senão usar defaultUser
-  const currentUser = userInfo || defaultUser;
-  const isLoggedIn = !!user;
+  // Se não há usuário autenticado, não renderizar o componente
+  if (!user || !userInfo) {
+    return null;
+  }
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -173,9 +180,7 @@ export function Topbar() {
 
   const handleLogout = async () => {
     try {
-      if (isLoggedIn) {
-        await logout();
-      }
+      await logout();
       setIsUserMenuOpen(false);
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
@@ -247,10 +252,10 @@ export function Topbar() {
           >
             {/* Avatar */}
             <div className="relative">
-              {currentUser.avatar ? (
+              {userInfo.avatar ? (
                 <img
-                  src={currentUser.avatar}
-                  alt={currentUser.name}
+                  src={userInfo.avatar}
+                  alt={userInfo.name}
                   className="w-9 h-9 rounded-full object-cover ring-2 ring-neutral-200 group-hover:ring-blue-300 transition-all duration-200"
                   onError={(e) => {
                     // Fallback caso a imagem do Google falhe
@@ -263,39 +268,30 @@ export function Topbar() {
               ) : null}
               <div
                 className={`w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center ${
-                  currentUser.avatar ? "hidden" : ""
+                  userInfo.avatar ? "hidden" : ""
                 }`}
               >
                 <span className="text-white font-semibold text-sm">
-                  {getUserInitials(currentUser.name)}
+                  {getUserInitials(userInfo.name)}
                 </span>
               </div>
               {/* Status online */}
-              <div
-                className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 ${
-                  isLoggedIn ? "bg-emerald-500" : "bg-gray-400"
-                } border-2 border-white rounded-full`}
-              ></div>
+              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></div>
             </div>
 
             {/* Info do Usuário - Desktop */}
             <div className="hidden lg:block text-left">
               <p className="text-sm font-semibold text-neutral-900 truncate max-w-[120px]">
-                {currentUser.name}
+                {userInfo.name}
               </p>
               <div className="flex items-center gap-2">
                 <span
                   className={`text-xs font-medium px-2 py-0.5 rounded-full border ${getPlanColor(
-                    currentUser.plan
+                    userInfo.plan
                   )}`}
                 >
-                  {currentUser.plan}
+                  {userInfo.plan}
                 </span>
-                {!isLoggedIn && (
-                  <span className="text-xs text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">
-                    Demo
-                  </span>
-                )}
               </div>
             </div>
 
@@ -312,10 +308,10 @@ export function Topbar() {
               {/* Header do Menu */}
               <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-neutral-200">
                 <div className="flex items-center gap-3">
-                  {currentUser.avatar ? (
+                  {userInfo.avatar ? (
                     <img
-                      src={currentUser.avatar}
-                      alt={currentUser.name}
+                      src={userInfo.avatar}
+                      alt={userInfo.name}
                       className="w-12 h-12 rounded-full object-cover ring-2 ring-white shadow-sm"
                       onError={(e) => {
                         // Fallback caso a imagem do Google falhe
@@ -328,33 +324,28 @@ export function Topbar() {
                   ) : null}
                   <div
                     className={`w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center ring-2 ring-white shadow-sm ${
-                      currentUser.avatar ? "hidden" : ""
+                      userInfo.avatar ? "hidden" : ""
                     }`}
                   >
                     <span className="text-white font-bold text-lg">
-                      {getUserInitials(currentUser.name)}
+                      {getUserInitials(userInfo.name)}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-neutral-900 truncate">
-                      {currentUser.name}
+                      {userInfo.name}
                     </p>
                     <p className="text-sm text-neutral-600 truncate">
-                      {currentUser.email}
+                      {userInfo.email}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       <span
                         className={`inline-block text-xs font-medium px-2 py-1 rounded-full border ${getPlanColor(
-                          currentUser.plan
+                          userInfo.plan
                         )}`}
                       >
-                        Plano {currentUser.plan}
+                        Plano {userInfo.plan}
                       </span>
-                      {!isLoggedIn && (
-                        <span className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-full border border-orange-200">
-                          Demo
-                        </span>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -375,23 +366,13 @@ export function Topbar() {
                   <span>Configurações</span>
                 </button>
                 <div className="h-px bg-neutral-200 my-2 mx-3"></div>
-                {isLoggedIn ? (
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-colors duration-200"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span>Sair</span>
-                  </button>
-                ) : (
-                  <Link
-                    href="/"
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-blue-600 hover:bg-blue-50 rounded-xl transition-colors duration-200"
-                  >
-                    <User className="w-4 h-4" />
-                    <span>Fazer Login</span>
-                  </Link>
-                )}
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-colors duration-200"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sair</span>
+                </button>
               </div>
             </div>
           )}

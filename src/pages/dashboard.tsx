@@ -70,8 +70,6 @@ function DashboardContent() {
     if (!loading) {
       if (user) {
         setData(mockData);
-      } else if (process.env.NEXT_PUBLIC_NODE_ENV === "development") {
-        setData(mockData);
       } else {
         router.push("/");
       }

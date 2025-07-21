@@ -155,6 +155,9 @@ class AuthService {
   // Logout
   logout() {
     this.removeToken();
+    // Limpar qualquer cache adicional se necessário
+    localStorage.removeItem("userProfile");
+    localStorage.removeItem("backendUserData");
   }
 }
 

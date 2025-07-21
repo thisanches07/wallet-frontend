@@ -256,16 +256,6 @@ export default function LoginPage() {
                     : "Não tem conta? Cadastre-se gratuitamente"}
                 </button>
               </div>
-
-              {/* Dev button */}
-              {process.env.NODE_ENV === "development" && (
-                <button
-                  onClick={() => router.push("/dashboard")}
-                  className="w-full text-xs text-gray-400 hover:text-gray-600 py-2 transition-colors"
-                >
-                  Pular login (desenvolvimento)
-                </button>
-              )}
             </div>
           </div>
 

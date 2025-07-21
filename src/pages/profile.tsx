@@ -2,13 +2,22 @@ import { Topbar } from "@/components/Topbar";
 import { useAuth } from "@/hooks/useAuth";
 import { authService } from "@/services/authService";
 import { ArrowRight, Check, Crown, Mail, Settings, User } from "lucide-react";
+import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [selectedPlan, setSelectedPlan] = useState("basic");
   const [userBackendData, setUserBackendData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  // Redirecionar se não autenticado
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/");
+    }
+  }, [user, authLoading, router]);
 
   // Buscar dados do usuário do backend
   useEffect(() => {
@@ -98,14 +107,11 @@ const Profile = () => {
 
   };
 
-  if (loading) {
+  if (authLoading || loading || !user) {
     return (
       <div className="min-h-screen bg-neutral-50">
-        <Topbar />
-        <div className="max-w-4xl mx-auto p-6 pt-24">
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-          </div>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
         </div>
       </div>
     );
