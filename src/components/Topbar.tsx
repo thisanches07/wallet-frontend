@@ -56,8 +56,8 @@ const useUserProfile = (firebaseUser: any) => {
   const [userProfile, setUserProfile] = useState<UserInfo | null>(null);
 
   useEffect(() => {
-    // Limpar dados quando não há usuário ou quando o usuário muda
-    if (!firebaseUser) {
+    // Limpar dados quando não há usuário
+    if (!firebaseUser?.uid) {
       setUserProfile(null);
       return;
     }
@@ -72,11 +72,13 @@ const useUserProfile = (firebaseUser: any) => {
         const userKey = `userProfile_${firebaseUser.uid}`;
         
         // Limpar cache de outros usuários
-        Object.keys(localStorage).forEach(key => {
-          if (key.startsWith('userProfile_') && key !== userKey) {
-            localStorage.removeItem(key);
-          }
-        });
+        if (typeof window !== 'undefined') {
+          Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('userProfile_') && key !== userKey) {
+              localStorage.removeItem(key);
+            }
+          });
+        }
 
         // Importar o authService dinamicamente para evitar circular imports
         const { authService } = await import("@/services/authService");

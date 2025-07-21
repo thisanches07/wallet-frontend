@@ -97,7 +97,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // Se o UID mudou, limpar dados do usuário anterior
-      if (user && user.uid !== firebaseUser.uid) {
+      if (user?.uid && user.uid !== firebaseUser.uid) {
         setUser(null);
         setToken(null);
         authService.removeToken();

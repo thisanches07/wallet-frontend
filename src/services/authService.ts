@@ -27,15 +27,22 @@ class AuthService {
 
   // Armazenar token localmente
   setToken(token: string) {
-    localStorage.setItem("authToken", token);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem("authToken", token);
+    }
   }
 
   getToken(): string | null {
-    return localStorage.getItem("authToken");
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem("authToken");
+    }
+    return null;
   }
 
   removeToken() {
-    localStorage.removeItem("authToken");
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem("authToken");
+    }
   }
 
   // Login direto com Firebase
@@ -156,8 +163,10 @@ class AuthService {
   logout() {
     this.removeToken();
     // Limpar qualquer cache adicional se necessário
-    localStorage.removeItem("userProfile");
-    localStorage.removeItem("backendUserData");
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem("userProfile");
+      localStorage.removeItem("backendUserData");
+    }
   }
 }
 

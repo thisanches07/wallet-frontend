@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  swcMinify: true,
+  experimental: {
+    esmExternals: true,
+  },
 };
 
 export default nextConfig;
