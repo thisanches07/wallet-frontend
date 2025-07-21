@@ -15,11 +15,9 @@ export function useOnboarding() {
   const checkOnboardingStatus = () => {
     if (hasChecked) return; // Evitar múltiplas verificações
 
-    if (typeof window !== 'undefined') {
-      const hasConfig = localStorage.getItem("planejamentoFinanceiro");
-      if (!hasConfig) {
-        setShowOnboarding(true);
-      }
+    const hasConfig = localStorage.getItem("planejamentoFinanceiro");
+    if (!hasConfig) {
+      setShowOnboarding(true);
     }
     setHasChecked(true);
   };
@@ -38,12 +36,10 @@ export function useOnboarding() {
       configuracao: data,
     };
 
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(
-        "planejamentoFinanceiro",
-        JSON.stringify(planejamento)
-      );
-    }
+    localStorage.setItem(
+      "planejamentoFinanceiro",
+      JSON.stringify(planejamento)
+    );
     setShowOnboarding(false);
   };
 

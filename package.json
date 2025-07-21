@@ -15,8 +15,8 @@
     "lucide-react": "^0.511.0",
     "next": "15.1.8",
     "pluggy-sdk": "^0.73.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "react-pluggy-connect": "^2.10.2",
     "recharts": "^2.15.3",
     "uuid": "^11.1.0"

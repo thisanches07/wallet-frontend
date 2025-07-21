@@ -3,14 +3,6 @@ import { authService } from "@/services/authService";
 import { useCallback, useMemo } from "react";
 import { useAuth } from "./useAuth";
 
-// Função utilitária para acessar localStorage de forma segura
-const getToken = () => {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem("authToken");
-  }
-  return null;
-};
-
 export function useApi() {
   const { logout } = useAuth();
 
@@ -134,7 +126,7 @@ export function useApi() {
       // Exportar dados mensais em Excel
       exportMonthlySummary: async (year: number, month: number) => {
         try {
-          const token = getToken();
+          const token = localStorage.getItem("authToken");
           const response = await fetch(
             `${
               process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
@@ -164,7 +156,7 @@ export function useApi() {
       // Exportar relatório completo por categoria
       exportMonthlySummaryByCategory: async (year: number, month: number) => {
         try {
-          const token = getToken();
+          const token = localStorage.getItem("authToken");
           const response = await fetch(
             `${
               process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
@@ -194,7 +186,7 @@ export function useApi() {
       // Exportar evolução anual de receitas e despesas
       exportYearlyEvolution: async (year: number) => {
         try {
-          const token = getToken();
+          const token = localStorage.getItem("authToken");
           const response = await fetch(
             `${
               process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"

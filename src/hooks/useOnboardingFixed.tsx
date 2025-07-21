@@ -16,11 +16,9 @@ export function useOnboarding() {
     if (hasChecked) return;
 
     try {
-      if (typeof window !== 'undefined') {
-        const hasConfig = localStorage.getItem("planejamentoFinanceiro");
-        if (!hasConfig) {
-          setShowOnboarding(true);
-        }
+      const hasConfig = localStorage.getItem("planejamentoFinanceiro");
+      if (!hasConfig) {
+        setShowOnboarding(true);
       }
     } catch (error) {
       console.error("Erro ao verificar configuração:", error);
@@ -45,12 +43,10 @@ export function useOnboarding() {
         dataConfiguracao: new Date().toISOString(),
       };
 
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(
-          "planejamentoFinanceiro",
-          JSON.stringify(planejamento)
-        );
-      }
+      localStorage.setItem(
+        "planejamentoFinanceiro",
+        JSON.stringify(planejamento)
+      );
       setShowOnboarding(false);
     } catch (error) {
       console.error("Erro ao salvar configuração:", error);
