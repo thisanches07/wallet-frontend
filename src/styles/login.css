@@ -1,0 +1,93 @@
+/* Reset global */
+/*
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #0e0e11;
+  color: #f0f0f0;
+  font-family: Arial, sans-serif;
+  height: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.login-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #0e0e11;
+  color: #f0f0f0;
+  font-family: Arial, sans-serif;
+}
+
+.login-box {
+  background-color: #1b1c20;
+  padding: 2rem;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.6);
+}
+
+.login-title {
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.login-input {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background-color: #2a2b30;
+  color: #fff;
+}
+
+.btn {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+}
+
+.btn-primary {
+  background-color: #3ea76a;
+  color: #fff;
+  border: none;
+}
+
+.btn-secondary {
+  background-color: #3178c6;
+  color: #fff;
+  border: none;
+}
+
+.btn-google {
+  background-color: #fff;
+  color: #333;
+  border: 1px solid #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.login-error {
+  color: #f55;
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.login-loading {
+  color: #aaa;
+  text-align: center;
+  margin-top: 1rem;
+}
+*/
