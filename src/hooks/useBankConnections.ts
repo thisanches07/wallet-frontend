@@ -1,6 +1,7 @@
 import { PluggyAccount, PluggyConnection } from "@/services/pluggyService";
 import type { Item } from "pluggy-sdk";
 import { useCallback, useEffect, useState } from "react";
+import { PluggyItem, usePluggyItems } from "./usePluggyItems";
 
 export interface ConnectedBank {
   id: string;
@@ -26,6 +27,8 @@ export function useBankConnections() {
   const [pendingReject, setPendingReject] = useState<
     ((error: Error) => void) | null
   >(null);
+
+  const { removePluggyItem, getPluggyItems } = usePluggyItems();
 
   const mapPluggyConnectionToBank = useCallback(
     (
@@ -78,37 +81,78 @@ export function useBankConnections() {
     };
   }, []);
 
+  const mapPluggyItemToBank = useCallback(
+    (pluggyItem: PluggyItem): ConnectedBank => {
+      return {
+        id: pluggyItem.itemId,
+        name: pluggyItem.institution,
+        status: "connected",
+        lastSync: new Date(pluggyItem.connectedAt),
+        imageUrl: pluggyItem.imageUrl, // Agora vem da API backend
+        primaryColor: undefined, // API não retorna primaryColor ainda
+      };
+    },
+    []
+  );
+
   const loadConnections = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Inicialmente vazio - as conexões serão adicionadas quando o usuário conectar bancos
-      setConnectedBanks([]);
+      console.log("📡 Carregando bancos conectados da API...");
+
+      // Buscar itens Pluggy conectados da API
+      const pluggyItems = await getPluggyItems();
+      console.log("✅ Itens carregados:", pluggyItems);
+
+      // Mapear para ConnectedBank
+      const banks = pluggyItems.map(mapPluggyItemToBank);
+      setConnectedBanks(banks);
+
+      console.log("✅ Bancos conectados carregados:", banks.length);
     } catch (err) {
-      console.error("Erro ao carregar conexões:", err);
+      console.error("❌ Erro ao carregar conexões:", err);
       setError("Erro ao carregar conexões bancárias");
+      // Em caso de erro, manter lista vazia
+      setConnectedBanks([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getPluggyItems, mapPluggyItemToBank]);
 
   const handlePluggySuccess = useCallback(
-    (itemData: { item: Item }) => {
+    async (itemData: { item: Item }) => {
       console.log("✅ Conexão bem-sucedida:", itemData);
 
-      const newBank = mapItemToBank(itemData.item);
-      setConnectedBanks((prev) => [...prev, newBank]);
+      try {
+        // Recarregar a lista de bancos da API para garantir sincronização
+        console.log("🔄 Recarregando lista de bancos...");
+        await loadConnections();
 
-      if (pendingResolve) {
-        pendingResolve(newBank);
-        setPendingResolve(null);
+        const newBank = mapItemToBank(itemData.item);
+
+        if (pendingResolve) {
+          pendingResolve(newBank);
+          setPendingResolve(null);
+        }
+      } catch (error) {
+        console.error("❌ Erro ao recarregar lista:", error);
+
+        // Fallback: adicionar localmente se falhar o reload
+        const newBank = mapItemToBank(itemData.item);
+        setConnectedBanks((prev) => [...prev, newBank]);
+
+        if (pendingResolve) {
+          pendingResolve(newBank);
+          setPendingResolve(null);
+        }
       }
 
       setShowPluggyWidget(false);
       setConnectToken("");
     },
-    [mapItemToBank, pendingResolve]
+    [mapItemToBank, pendingResolve, loadConnections]
   );
 
   const handlePluggyError = useCallback(
@@ -193,14 +237,26 @@ export function useBankConnections() {
     }
   }, []);
 
-  const disconnectBank = useCallback(async (bankId: string) => {
-    try {
-      setConnectedBanks((prev) => prev.filter((bank) => bank.id !== bankId));
-    } catch (error) {
-      console.error("Erro ao desconectar banco:", error);
-      throw error;
-    }
-  }, []);
+  const disconnectBank = useCallback(
+    async (bankId: string) => {
+      try {
+        console.log("🗑️ Desvinculando banco:", bankId);
+
+        // Chamar API backend para remover o item Pluggy
+        await removePluggyItem(bankId);
+        console.log("✅ Item removido do backend com sucesso");
+
+        // Recarregar lista da API para garantir sincronização
+        console.log("🔄 Recarregando lista de bancos...");
+        await loadConnections();
+        console.log("✅ Lista recarregada após desconexão");
+      } catch (error) {
+        console.error("❌ Erro ao desconectar banco:", error);
+        throw error;
+      }
+    },
+    [removePluggyItem, loadConnections]
+  );
 
   const syncBank = useCallback(async (bankId: string) => {
     try {

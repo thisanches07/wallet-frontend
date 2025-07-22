@@ -30,7 +30,10 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      console.log("🔄 Usuário encontrado, redirecionando para dashboard...", user);
+      console.log(
+        "🔄 Usuário encontrado, redirecionando para dashboard...",
+        user
+      );
       router.push("/dashboard");
     }
   }, [loading, user, router]);

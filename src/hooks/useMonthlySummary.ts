@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { useAuth } from "./useAuth";
 import { useApi } from "./useApi";
+import { useAuth } from "./useAuth";
 
 export interface MonthlySummaryData {
   year: number;
@@ -38,13 +38,13 @@ export function useMonthlySummary(year: number) {
       setLoading(true);
       setError(null);
       const response = await api.getMonthlySummary(year);
-      
+
       // Se a resposta for null (usuário não autenticado), apenas parar silenciosamente
       if (response === null) {
         setLoading(false);
         return;
       }
-      
+
       setSummaryData(response as MonthlySummaryData[]);
     } catch (err) {
       // Só logar erro se não for problema de autenticação

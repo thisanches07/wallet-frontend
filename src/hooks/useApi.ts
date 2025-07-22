@@ -10,18 +10,22 @@ export function useApi() {
     async <T>(endpoint: string, options: RequestInit = {}) => {
       // Se não há usuário ou token, retornar null silenciosamente
       if (!user || !token) {
-        console.log("🔒 Tentativa de requisição sem autenticação - ignorando:", endpoint);
+        console.log(
+          "🔒 Tentativa de requisição sem autenticação - ignorando:",
+          endpoint
+        );
         return null;
       }
 
       const response = await authService.apiCall<T>(endpoint, options);
 
       // Se retornar erro de autenticação, fazer logout automático
-      if (!response.success && (
-        response.error?.includes("Unauthorized") || 
-        response.error?.includes("Token ausente") ||
-        response.error?.includes("não autenticado")
-      )) {
+      if (
+        !response.success &&
+        (response.error?.includes("Unauthorized") ||
+          response.error?.includes("Token ausente") ||
+          response.error?.includes("não autenticado"))
+      ) {
         console.log("🔐 Sessão inválida detectada, fazendo logout...");
         logout();
         return null;

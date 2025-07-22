@@ -71,14 +71,26 @@ export function BankConnectionButton({ onConnect }: BankConnectionButtonProps) {
 
   const handleDisconnect = useCallback(
     async (bankId: string) => {
+      const bank = connectedBanks.find((b) => b.id === bankId);
+      const bankName = bank?.name || "este banco";
+
+      const confirmDisconnect = window.confirm(
+        `Tem certeza que deseja desvincular ${bankName}?\n\nEsta ação irá:\n• Remover o banco da sua lista\n• Parar a sincronização de dados\n• Não apagar dados já importados`
+      );
+
+      if (!confirmDisconnect) {
+        return;
+      }
+
       try {
         await disconnectBank(bankId);
+        console.log(`✅ ${bankName} desvinculado com sucesso`);
       } catch (error) {
         console.error("Erro ao desconectar banco:", error);
-        alert("Erro ao desconectar banco. Tente novamente.");
+        alert(`Erro ao desvincular ${bankName}. Tente novamente.`);
       }
     },
-    [disconnectBank]
+    [disconnectBank, connectedBanks]
   );
 
   const handleSync = useCallback(
@@ -203,20 +215,15 @@ export function BankConnectionButton({ onConnect }: BankConnectionButtonProps) {
                     className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl hover:bg-neutral-100 transition-colors group"
                   >
                     <div className="flex items-center gap-3">
-                      <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
-                        style={{
-                          backgroundColor: bank.primaryColor || "#6366f1",
-                        }}
-                      >
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center">
                         {bank.imageUrl ? (
                           <img
                             src={bank.imageUrl}
                             alt={bank.name}
-                            className="w-6 h-6 rounded"
+                            className="w-8 h-8 rounded-lg object-cover"
                           />
                         ) : (
-                          <CreditCard className="w-4 h-4" />
+                          <CreditCard className="w-6 h-6 text-neutral-600" />
                         )}
                       </div>
                       <div>

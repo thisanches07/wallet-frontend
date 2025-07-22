@@ -1,3 +1,4 @@
+import { usePluggyItems } from "@/hooks/usePluggyItems";
 import dynamic from "next/dynamic";
 import type { Item } from "pluggy-sdk";
 import { useCallback, useState } from "react";
@@ -25,14 +26,32 @@ export function PluggyWidget({
   onClose,
 }: PluggyWidgetProps) {
   const [isVisible, setIsVisible] = useState(true);
+  const { addPluggyItem } = usePluggyItems();
 
   const handleSuccess = useCallback(
-    (itemData: { item: Item }) => {
+    async (itemData: { item: Item }) => {
       console.log("✅ Conexão bem-sucedida no widget:", itemData);
+      console.log("🔍 Estrutura do item:", JSON.stringify(itemData.item, null, 2));
+      console.log("🖼️ InstitutionUrl:", itemData.item.connector?.institutionUrl);
+
+      try {
+        // Salvar automaticamente o item no backend
+        console.log("💾 Salvando item no backend...");
+        const savedItem = await addPluggyItem(
+          itemData.item.id,
+          itemData.item.connector.name,
+          itemData.item.connector?.institutionUrl || ""
+        );
+        console.log("✅ Item salvo no backend:", savedItem);
+      } catch (error) {
+        console.error("❌ Erro ao salvar item no backend:", error);
+        // Não bloqueia o fluxo, apenas loga o erro
+      }
+
       setIsVisible(false);
       onSuccess(itemData);
     },
-    [onSuccess]
+    [onSuccess, addPluggyItem]
   );
 
   const handleError = useCallback(
