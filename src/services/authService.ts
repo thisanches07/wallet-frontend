@@ -142,7 +142,7 @@ class AuthService {
       };
     } catch (error) {
       // Se a requisição foi cancelada, não tratar como erro
-      if (error instanceof Error && error.name === 'AbortError') {
+      if (error instanceof Error && error.name === "AbortError") {
         return {
           success: false,
           error: "Requisição cancelada",
@@ -187,18 +187,20 @@ class AuthService {
   logout() {
     // Cancelar todas as requisições em andamento
     this.cancelAllRequests();
-    
+
     this.removeToken();
     // Limpar qualquer cache adicional se necessário
     localStorage.removeItem("userProfile");
     localStorage.removeItem("backendUserData");
-    
+
     // Limpar TODOS os dados relacionados ao Firebase e usuário
-    Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('userProfile_') || 
-          key.startsWith('firebase:') || 
-          key.includes('auth') ||
-          key.includes('user')) {
+    Object.keys(localStorage).forEach((key) => {
+      if (
+        key.startsWith("userProfile_") ||
+        key.startsWith("firebase:") ||
+        key.includes("auth") ||
+        key.includes("user")
+      ) {
         localStorage.removeItem(key);
       }
     });

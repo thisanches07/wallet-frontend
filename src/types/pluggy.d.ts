@@ -6,6 +6,7 @@ declare interface PluggyConnector {
   id: number;
   name: string;
   imageUrl?: string;
+  institutionUrl?: string;
   primaryColor?: string;
 }
 

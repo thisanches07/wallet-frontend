@@ -83,7 +83,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Limpar qualquer token existente primeiro para evitar loops
     const savedToken = authService.getToken();
     if (savedToken) {
-      console.log("🔍 Token salvo encontrado, removendo para garantir estado limpo");
+      console.log(
+        "🔍 Token salvo encontrado, removendo para garantir estado limpo"
+      );
       authService.removeToken();
     }
 
@@ -118,7 +120,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setToken(null);
         authService.removeToken();
       }
-      
+
       setLoading(false);
     });
 
@@ -180,21 +182,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     try {
       console.log("🚪 Iniciando logout...");
-      
+
       // 1. Limpar estado local PRIMEIRO para evitar mais requisições
       setUser(null);
       setToken(null);
       authService.removeToken();
-      
+
       // 2. Limpar todo o cache
       authService.logout();
-      
+
       // 3. Fazer logout do Firebase (pode falhar, mas não é crítico)
       try {
         await signOut(auth);
         console.log("✅ Firebase logout realizado");
       } catch (firebaseError) {
-        console.warn("⚠️ Erro no logout do Firebase (não crítico):", firebaseError);
+        console.warn(
+          "⚠️ Erro no logout do Firebase (não crítico):",
+          firebaseError
+        );
       }
 
       // 4. Redirecionar para a página de login

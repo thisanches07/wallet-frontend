@@ -3,8 +3,8 @@ import { Expense } from "@/types/expense";
 import { filterByMonth } from "@/utils/dateUtils";
 import { convertApiExpenseToExpense } from "@/utils/expenseUtils";
 import { useCallback, useEffect, useState } from "react";
-import { useAuth } from "./useAuth";
 import { useApi } from "./useApi";
+import { useAuth } from "./useAuth";
 
 interface IncomeData {
   tipo: "recorrente" | "pontual";
@@ -107,7 +107,15 @@ export function useMonthlyData() {
         setData(emptyData);
       }
     }
-  }, [cacheKey, selectedMonth, selectedYear, user, token, getExpenses, getIncomes]);
+  }, [
+    cacheKey,
+    selectedMonth,
+    selectedYear,
+    user,
+    token,
+    getExpenses,
+    getIncomes,
+  ]);
 
   const loadExpenses = async (): Promise<Expense[]> => {
     try {
@@ -127,12 +135,12 @@ export function useMonthlyData() {
       } else {
         // Fallback: buscar todas e filtrar localmente
         const allExpenses = await getExpenses();
-        
+
         // Se retornou null, retornar array vazio
         if (allExpenses === null) {
           return [];
         }
-        
+
         if (Array.isArray(allExpenses)) {
           const convertedExpenses = allExpenses.map(convertApiExpenseToExpense);
           return filterByMonth(convertedExpenses, selectedMonth, selectedYear);
@@ -163,12 +171,12 @@ export function useMonthlyData() {
       } else {
         // Fallback: buscar todas e filtrar localmente
         const allIncomes = await getIncomes();
-        
+
         // Se retornou null, retornar array vazio
         if (allIncomes === null) {
           return [];
         }
-        
+
         if (Array.isArray(allIncomes)) {
           return filterByMonth(allIncomes, selectedMonth, selectedYear);
         }

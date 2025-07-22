@@ -32,7 +32,7 @@ export default function DashboardPage() {
 
 function DashboardContent() {
   const { selectedMonth, setSelectedMonth } = useSelectedMonth();
-  
+
   // Remover mock data - usar apenas dados reais do backend
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -58,7 +58,7 @@ function DashboardContent() {
       if (user) {
         // TODO: Carregar dados reais do backend
         // setData(realDataFromBackend);
-        
+
         // Por enquanto, mostrar dashboard vazio para usuários reais
         setData({
           income: 0,
