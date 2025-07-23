@@ -85,13 +85,13 @@ export const EXPENSE_CATEGORIES: CategorySuggestion[] = [
   },
 ];
 
-// Todas as categorias
+// Todas as categorys
 export const ALL_CATEGORIES: CategorySuggestion[] = [
   ...INCOME_CATEGORIES,
   ...EXPENSE_CATEGORIES,
 ];
 
-// Utilitários para obter categorias
+// Utilitários para obter categorys
 export const getCategoryByName = (
   name: string
 ): CategorySuggestion | undefined => {

@@ -14,10 +14,12 @@ import { useApi } from "../hooks/useApi";
 
 interface IncomeData {
   id: number;
+  itemId?: string;
+  date: string;
   tipo: "recorrente" | "pontual";
   description: string;
   amount: number;
-  categoria: "salario" | "freelance" | "investimento" | "bonus" | "outros";
+  category: "salario" | "freelance" | "investimento" | "bonus" | "outros";
   source: "MANUAL" | "PLUGGY";
 }
 
@@ -302,8 +304,9 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
         // Verificar se o expense está no formato correto
         const formattedExpense = {
           id: expense.id,
+          itemId: expense.itemId, // Garantir que itemId esteja definido
           description: expense.description,
-          categoria: expense.categoria,
+          category: expense.category,
           valor: Number(expense.valor),
           data: expense.data,
           tipo: expense.tipo || "unico",
@@ -357,10 +360,12 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
       // Converter income para o formato esperado pelo contexto
       const contextIncome: IncomeData = {
         id: parseInt(income.id),
+        itemId: income.itemId,
+        date: income.date,
         tipo: income.tipo || "pontual",
         description: income.description,
         amount: Number(income.valor || income.amount),
-        categoria: income.categoria,
+        category: income.category,
         source: income.source,
       };
 

@@ -1,7 +1,8 @@
 export type Expense = {
   id: number;
+  itemId?: string;
   description: string;
-  categoria: string;
+  category: string;
   valor: number;
   data: string;
   tipo?: "unico" | "recorrente";
@@ -11,6 +12,7 @@ export type Expense = {
 
 export type ApiExpense = {
   id: number;
+  itemId?: string;
   description: string;
   amount: number;
   date: string;

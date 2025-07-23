@@ -79,7 +79,7 @@ export function ReportsModal({ onClose }: ReportsModalProps) {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `resumo-mensal-categorias-${
+      link.download = `resumo-mensal-categorys-${
         selectedMonth + 1
       }-${selectedYear}.xlsx`;
       document.body.appendChild(link);
@@ -87,8 +87,8 @@ export function ReportsModal({ onClose }: ReportsModalProps) {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error("Erro ao exportar resumo mensal por categoria:", error);
-      alert("Erro ao exportar resumo mensal por categoria. Tente novamente.");
+      console.error("Erro ao exportar resumo mensal por category:", error);
+      alert("Erro ao exportar resumo mensal por category. Tente novamente.");
     } finally {
       setLoading(null);
     }
@@ -119,7 +119,7 @@ export function ReportsModal({ onClose }: ReportsModalProps) {
       id: "monthly-by-category",
       title: "Resumo Mensal por Categoria",
       description:
-        "Exporta o detalhamento completo das despesas do mês organizadas por categoria, incluindo gráficos e análises detalhadas.",
+        "Exporta o detalhamento completo das despesas do mês organizadas por category, incluindo gráficos e análises detalhadas.",
       icon: PieChart,
       color: "bg-purple-50 text-purple-600 border-purple-200",
       action: handleMonthlySummaryByCategoryExport,

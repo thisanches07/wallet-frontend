@@ -25,7 +25,7 @@ type ApiExpense = {
 interface ExpenseData {
   id?: string;
   description: string;
-  categoria: string;
+  category: string;
   valor: number;
   data: string;
   tipo: "unico" | "recorrente";
@@ -38,7 +38,7 @@ export function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
 
   const [formData, setFormData] = useState<ExpenseData>({
     description: "",
-    categoria: "",
+    category: "",
     valor: 0,
     data: new Date().toISOString().split("T")[0],
     tipo: "unico",
@@ -52,7 +52,7 @@ export function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
     return {
       id: apiExpense.id.toString(),
       description: apiExpense.description,
-      categoria: apiExpense.category,
+      category: apiExpense.category,
       valor: apiExpense.amount,
       data: apiExpense.date,
       tipo: "unico",
@@ -67,8 +67,8 @@ export function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
       newErrors.description = "Descrição é obrigatória";
     }
 
-    if (!formData.categoria.trim()) {
-      newErrors.categoria = "Categoria é obrigatória";
+    if (!formData.category.trim()) {
+      newErrors.category = "Categoria é obrigatória";
     }
 
     if (formData.valor <= 0) {
@@ -100,7 +100,7 @@ export function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
         description: formData.description,
         amount: formData.valor,
         date: startDate.toISOString(),
-        category: formData.categoria,
+        category: formData.category,
       };
 
       const apiResponse = await createExpense(apiExpenseData);
@@ -208,11 +208,9 @@ export function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
                   <button
                     key={category.id}
                     type="button"
-                    onClick={() =>
-                      handleInputChange("categoria", category.name)
-                    }
+                    onClick={() => handleInputChange("category", category.name)}
                     className={`p-3 text-sm font-medium border rounded-xl transition-all flex items-center gap-2 ${
-                      formData.categoria === category.name
+                      formData.category === category.name
                         ? "bg-red-50 text-red-700 border-red-300 ring-2 ring-red-500 ring-opacity-20"
                         : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
                     }`}
@@ -223,8 +221,8 @@ export function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
                   </button>
                 ))}
               </div>
-              {errors.categoria && (
-                <p className="text-red-500 text-xs mt-1">{errors.categoria}</p>
+              {errors.category && (
+                <p className="text-red-500 text-xs mt-1">{errors.category}</p>
               )}
             </div>
 

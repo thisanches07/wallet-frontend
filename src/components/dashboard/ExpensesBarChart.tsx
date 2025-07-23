@@ -13,7 +13,7 @@ import {
   YAxis,
 } from "recharts";
 
-// Paleta de cores profissionais para categorias
+// Paleta de cores profissionais para categorys
 const CATEGORY_COLORS = [
   "#3B82F6", // Blue
   "#8B5CF6", // Purple
@@ -40,13 +40,13 @@ export function ExpensesBarChart() {
   const { selectedMonth, selectedYear } = useSelectedMonth();
   const { expenses, loading } = useMonthlyData(selectedMonth, selectedYear);
 
-  // Processar dados de despesas por categoria
+  // Processar dados de despesas por category
   const chartData = useMemo(() => {
     if (!expenses || expenses.length === 0 || loading) return [];
 
-    // Agrupar despesas por categoria
+    // Agrupar despesas por category
     const categoryGroups = expenses.reduce((acc, expense) => {
-      const categoryName = expense.categoria || "Outros";
+      const categoryName = expense.category || "Outros";
       const category = getCategoryByName(categoryName);
 
       const displayName = category?.name || categoryName;
@@ -81,7 +81,7 @@ export function ExpensesBarChart() {
           totalExpenses > 0 ? (item.realizado / totalExpenses) * 100 : 0,
       }))
       .sort((a, b) => b.realizado - a.realizado)
-      .slice(0, 10); // Limitar a 10 categorias
+      .slice(0, 10); // Limitar a 10 categorys
   }, [expenses, loading]);
 
   const totalExpenses = chartData.reduce(
@@ -224,7 +224,7 @@ export function ExpensesBarChart() {
       {/* Legenda com percentuais */}
       <div className="mt-6 space-y-2">
         <h4 className="text-sm font-medium text-gray-900 mb-3">
-          Distribuição por categoria:
+          Distribuição por category:
         </h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {chartData.slice(0, 6).map((item, index) => (

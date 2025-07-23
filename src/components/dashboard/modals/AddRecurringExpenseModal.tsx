@@ -3,7 +3,7 @@ import { useState } from "react";
 
 interface RecurringExpenseData {
   description: string;
-  categoria: string;
+  category: string;
   valor: number;
   diaVencimento: number;
   ativo: boolean;
@@ -18,7 +18,7 @@ interface Props {
 export function AddRecurringExpenseModal({ onClose, onAdd }: Props) {
   const [form, setForm] = useState<RecurringExpenseData>({
     description: "",
-    categoria: "",
+    category: "",
     valor: 0,
     diaVencimento: 1,
     ativo: true,
@@ -27,13 +27,13 @@ export function AddRecurringExpenseModal({ onClose, onAdd }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (form.description && form.categoria && form.valor > 0) {
+    if (form.description && form.category && form.valor > 0) {
       onAdd(form);
       onClose();
     }
   };
 
-  const categorias = [
+  const categorys = [
     { value: "Moradia", icon: "🏠", color: "bg-blue-100 text-blue-700" },
     { value: "Transporte", icon: "🚗", color: "bg-purple-100 text-purple-700" },
     { value: "Alimentação", icon: "🍽️", color: "bg-green-100 text-green-700" },
@@ -147,13 +147,13 @@ export function AddRecurringExpenseModal({ onClose, onAdd }: Props) {
               Categoria
             </label>
             <select
-              value={form.categoria}
-              onChange={(e) => setForm({ ...form, categoria: e.target.value })}
+              value={form.category}
+              onChange={(e) => setForm({ ...form, category: e.target.value })}
               className="w-full px-4 py-3 border border-neutral-200 rounded-xl focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-all"
               required
             >
-              <option value="">Selecione uma categoria</option>
-              {categorias.map((cat) => (
+              <option value="">Selecione uma category</option>
+              {categorys.map((cat) => (
                 <option key={cat.value} value={cat.value}>
                   {cat.icon} {cat.value}
                 </option>
@@ -210,9 +210,8 @@ export function AddRecurringExpenseModal({ onClose, onAdd }: Props) {
                   <span className="font-medium">{form.description}</span>
                 </p>
                 <p className="text-sm text-orange-700">
-                  {categorias.find((c) => c.value === form.categoria)?.icon}{" "}
-                  {form.categoria} • Vence dia {form.diaVencimento} •{" "}
-                  {form.tipo}
+                  {categorys.find((c) => c.value === form.category)?.icon}{" "}
+                  {form.category} • Vence dia {form.diaVencimento} • {form.tipo}
                 </p>
                 <p className="text-lg font-bold text-orange-800">
                   R${" "}

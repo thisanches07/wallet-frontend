@@ -10,7 +10,7 @@ interface IncomeData {
   tipo: "recorrente" | "pontual";
   description: string;
   amount: number;
-  categoria: "salario" | "freelance" | "investimento" | "bonus" | "outros";
+  category: "salario" | "freelance" | "investimento" | "bonus" | "outros";
 }
 
 interface MonthlyData {

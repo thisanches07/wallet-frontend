@@ -80,7 +80,7 @@ export function MonthlyExpenses() {
     }
   };
 
-  const getCategoryIcon = (categoria: string): string => {
+  const getCategoryIcon = (category: string): string => {
     const iconMap: Record<string, string> = {
       Aluguel: "🏠",
       Transporte: "🚗",
@@ -90,10 +90,10 @@ export function MonthlyExpenses() {
       Educação: "📚",
       Outros: "📝",
     };
-    return iconMap[categoria] || "📝";
+    return iconMap[category] || "📝";
   };
 
-  const getCategoryColor = (categoria: string): string => {
+  const getCategoryColor = (category: string): string => {
     const colorMap: Record<string, string> = {
       Aluguel: "bg-primary-100 text-primary-700 border-primary-200",
       Transporte: "bg-purple-100 text-purple-700 border-purple-200",
@@ -104,8 +104,7 @@ export function MonthlyExpenses() {
       Outros: "bg-neutral-100 text-neutral-700 border-neutral-200",
     };
     return (
-      colorMap[categoria] ||
-      "bg-neutral-100 text-neutral-700 border-neutral-200"
+      colorMap[category] || "bg-neutral-100 text-neutral-700 border-neutral-200"
     );
   };
 
@@ -197,7 +196,7 @@ export function MonthlyExpenses() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <span className="text-sm">
-                        {getCategoryIcon(item.categoria)}
+                        {getCategoryIcon(item.category)}
                       </span>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-neutral-900 text-sm truncate">
@@ -206,10 +205,10 @@ export function MonthlyExpenses() {
                         <div className="flex items-center gap-2 mt-1">
                           <span
                             className={`px-2 py-0.5 rounded-md text-xs font-medium border ${getCategoryColor(
-                              item.categoria
+                              item.category
                             )}`}
                           >
-                            {item.categoria}
+                            {item.category}
                           </span>
                         </div>
                       </div>

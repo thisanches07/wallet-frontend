@@ -1,7 +1,8 @@
 import { useMonthlyData } from "@/context/MonthlyDataContext";
 import { useSelectedMonth } from "@/context/SelectedMonthContext";
 import { useIncomes } from "@/hooks/useApi";
-import { DollarSign, Trash2, X } from "lucide-react";
+import { useBankConnections } from "@/hooks/useBankConnections";
+import { Calendar, DollarSign, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface IncomesListModalProps {
@@ -15,45 +16,38 @@ export default function IncomesListModal({
 }: IncomesListModalProps) {
   const { deleteIncome } = useIncomes();
   const { selectedMonth, selectedYear } = useSelectedMonth();
-  const { incomes, refresh } = useMonthlyData(selectedMonth, selectedYear);
+  const { incomes } = useMonthlyData(selectedMonth, selectedYear);
+  const { connectedBanks } = useBankConnections();
+
   const [deletedIds, setDeletedIds] = useState<Set<number>>(new Set());
   const [animatingIds, setAnimatingIds] = useState<Set<number>>(new Set());
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [localIncomes, setLocalIncomes] = useState(incomes);
 
-  // Sincronizar com o contexto, mas preservar estado local durante animações
   useEffect(() => {
     if (animatingIds.size === 0) {
-      // Só atualizar se não há animações em andamento
       setLocalIncomes(incomes);
     }
   }, [incomes, animatingIds.size]);
 
-  // Filtrar receitas excluindo as que foram deletadas
   const visibleIncomes = localIncomes.filter(
     (income) => !deletedIds.has(income.id)
   );
 
-  // Resetar lista de deletados quando modal fechar
   const handleClose = () => {
     setDeletedIds(new Set());
     setAnimatingIds(new Set());
-    setLocalIncomes(incomes); // Resetar para dados do contexto
+    setLocalIncomes(incomes);
     onClose();
   };
 
   const handleDelete = async (incomeId: number) => {
     if (!incomeId) return;
-
     setDeletingId(incomeId);
     try {
-      // Iniciar animação de fade-out
       setAnimatingIds((prev) => new Set(prev).add(incomeId));
-
-      // Aguardar animação antes de remover da lista local
       setTimeout(() => {
         setDeletedIds((prev) => new Set(prev).add(incomeId));
-        // Após a animação, limpar o ID de animação
         setTimeout(() => {
           setAnimatingIds((prev) => {
             const newSet = new Set(prev);
@@ -61,24 +55,15 @@ export default function IncomesListModal({
             return newSet;
           });
         }, 100);
-      }, 300); // Duração da animação
-
-      // Fazer o delete na API
+      }, 300);
       await deleteIncome(incomeId);
-
-      // Disparar evento customizado para atualizar os dados do contexto
       window.dispatchEvent(
         new CustomEvent("incomeDeleted", {
-          detail: {
-            id: incomeId,
-            month: selectedMonth,
-            year: selectedYear,
-          },
+          detail: { id: incomeId, month: selectedMonth, year: selectedYear },
         })
       );
     } catch (error) {
       console.error("Erro ao deletar receita:", error);
-      // Em caso de erro, remover da animação e da lista de deletados
       setAnimatingIds((prev) => {
         const newSet = new Set(prev);
         newSet.delete(incomeId);
@@ -92,6 +77,36 @@ export default function IncomesListModal({
     } finally {
       setDeletingId(null);
     }
+  };
+
+  const getCategoryIcon = (category: string) => {
+    const icons: Record<string, string> = {
+      Salário: "💼",
+      Freelance: "💻",
+      Investimentos: "📈",
+      Outros: "💰",
+    };
+    return icons[category] || "💰";
+  };
+
+  const getIncomeIcon = (income: any) => {
+    console.log("object ->", income);
+    if (!income.itemId) {
+      return (
+        <span className="text-lg">{getCategoryIcon(income.category)}</span>
+      );
+    }
+    const bank = connectedBanks.find((b) => b.id === income.itemId);
+    if (bank?.imageUrl) {
+      return (
+        <img
+          src={bank.imageUrl}
+          alt={bank.name}
+          className="w-6 h-6 rounded-lg object-cover"
+        />
+      );
+    }
+    return <span className="text-lg">🏦</span>;
   };
 
   if (!isOpen) return null;
@@ -111,20 +126,9 @@ export default function IncomesListModal({
     "Dezembro",
   ];
 
-  const getCategoryIcon = (categoria: string) => {
-    const icons: Record<string, string> = {
-      Salário: "💼",
-      Freelance: "💻",
-      Investimentos: "📈",
-      Outros: "💰",
-    };
-    return icons[categoria] || "💰";
-  };
-
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
-        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-neutral-200">
           <div>
             <h2 className="text-xl font-bold text-neutral-900">
@@ -144,7 +148,6 @@ export default function IncomesListModal({
           </button>
         </div>
 
-        {/* Content */}
         <div className="overflow-y-auto max-h-[60vh] p-6">
           {visibleIncomes.length === 0 ? (
             <div className="text-center py-12">
@@ -169,30 +172,36 @@ export default function IncomesListModal({
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-success-100 flex items-center justify-center">
-                        <span className="text-lg">
-                          {getCategoryIcon(income.categoria)}
-                        </span>
+                      <div className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center">
+                        {getIncomeIcon(income)}
                       </div>
                       <div>
                         <h3 className="font-semibold text-neutral-900">
                           {income.description || "Receita"}
                         </h3>
                         <div className="flex items-center gap-4 mt-1">
+                          {income.date && (
+                            <span className="text-sm text-neutral-500 flex items-center gap-1">
+                              <Calendar size={14} />
+                              {new Date(income.date).toLocaleDateString(
+                                "pt-BR"
+                              )}
+                            </span>
+                          )}
+                          {income.category && (
+                            <span className="text-xs text-neutral-500 capitalize">
+                              {income.category}
+                            </span>
+                          )}
                           {income.tipo && (
                             <span
                               className={`text-xs px-2 py-1 rounded-full ${
                                 income.tipo === "recorrente"
-                                  ? "bg-success-100 text-success-700"
-                                  : "bg-primary-100 text-primary-700"
+                                  ? "bg-danger-100 text-danger-700"
+                                  : "bg-neutral-100 text-neutral-700"
                               }`}
                             >
                               {income.tipo}
-                            </span>
-                          )}
-                          {income.categoria && (
-                            <span className="text-xs text-neutral-500 capitalize">
-                              {income.categoria}
                             </span>
                           )}
                         </div>
@@ -207,20 +216,16 @@ export default function IncomesListModal({
                         minimumFractionDigits: 2,
                       })}
                     </span>
-
                     <button
                       onClick={() => handleDelete(income.id)}
                       disabled={
                         income.source !== "MANUAL" || deletingId === income.id
                       }
-                      className={`
-    p-2 rounded-lg transition-colors group
-    ${
-      income.source !== "MANUAL"
-        ? "opacity-50 cursor-not-allowed"
-        : "hover:bg-danger-50"
-    }
-  `}
+                      className={`p-2 rounded-lg transition-colors group ${
+                        income.source !== "MANUAL"
+                          ? "opacity-50 cursor-not-allowed"
+                          : "hover:bg-danger-50"
+                      }`}
                       title={
                         income.source !== "MANUAL"
                           ? "Receita importada do Open Finance"
@@ -232,11 +237,11 @@ export default function IncomesListModal({
                       ) : (
                         <Trash2
                           size={16}
-                          className={`${
+                          className={
                             income.source !== "MANUAL"
                               ? "text-neutral-300"
                               : "text-neutral-400 group-hover:text-danger-600"
-                          }`}
+                          }
                         />
                       )}
                     </button>
@@ -247,7 +252,6 @@ export default function IncomesListModal({
           )}
         </div>
 
-        {/* Footer */}
         {visibleIncomes.length > 0 && (
           <div className="border-t border-neutral-200 p-6">
             <div className="flex justify-between items-center">

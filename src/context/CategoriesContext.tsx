@@ -1,5 +1,10 @@
 // src/context/CategoriesContext.tsx (Novo sistema sem API)
-import { ALL_CATEGORIES, EXPENSE_CATEGORIES, INCOME_CATEGORIES, CategorySuggestion } from "@/constants/categories";
+import {
+  ALL_CATEGORIES,
+  CategorySuggestion,
+  EXPENSE_CATEGORIES,
+  INCOME_CATEGORIES,
+} from "@/constants/categories";
 import React, { createContext, useContext } from "react";
 
 interface CategoriesContextProps {
@@ -21,13 +26,13 @@ export const CategoriesProvider = ({
 }: {
   children: React.ReactNode;
 }) => {
-  // Agora usamos as categorias fixas ao invés de chamadas à API
+  // Agora usamos as categorys fixas ao invés de chamadas à API
   const categories = ALL_CATEGORIES;
   const loading = false;
   const error = null;
 
   const refreshCategories = async () => {
-    // Não faz nada, pois as categorias são fixas
+    // Não faz nada, pois as categorys são fixas
     return Promise.resolve();
   };
 

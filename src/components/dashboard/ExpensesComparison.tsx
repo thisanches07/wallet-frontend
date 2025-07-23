@@ -84,12 +84,12 @@ export function ExpensesComparison() {
       return;
     }
 
-    // Calcular gastos reais por categoria
+    // Calcular gastos reais por category
     const gastosPorCategoria = expenses.reduce(
       (acc: Record<string, number>, expense: Expense) => {
-        const categoria = expense.categoria.toLowerCase();
+        const category = expense.category.toLowerCase();
         const valor = Number(expense.valor) || 0; // Garantir que é número
-        acc[categoria] = (acc[categoria] || 0) + valor;
+        acc[category] = (acc[category] || 0) + valor;
         return acc;
       },
       {} as Record<string, number>
@@ -98,7 +98,7 @@ export function ExpensesComparison() {
     // Separar lazer do resto das despesas
     const gastoLazer = gastosPorCategoria["lazer"] || 0;
     const gastoOutrasDespesas = Object.entries(gastosPorCategoria)
-      .filter(([categoria]) => categoria !== "lazer")
+      .filter(([category]) => category !== "lazer")
       .reduce((acc, [, valor]) => acc + Number(valor), 0); // Garantir que é número
 
     // Criar dados de comparação
@@ -143,7 +143,7 @@ export function ExpensesComparison() {
             <h2 className="text-lg font-semibold text-neutral-900">
               Análise Detalhada
             </h2>
-            <p className="text-sm text-neutral-600">Comparação por categoria</p>
+            <p className="text-sm text-neutral-600">Comparação por category</p>
           </div>
         </div>
         <div className="flex items-center justify-center py-12">
@@ -164,7 +164,7 @@ export function ExpensesComparison() {
             <h2 className="text-lg font-semibold text-neutral-900">
               Análise Detalhada
             </h2>
-            <p className="text-sm text-neutral-600">Comparação por categoria</p>
+            <p className="text-sm text-neutral-600">Comparação por category</p>
           </div>
         </div>
         <div className="text-center py-12">
@@ -188,7 +188,7 @@ export function ExpensesComparison() {
             <h2 className="text-lg font-semibold text-neutral-900">
               Análise Detalhada
             </h2>
-            <p className="text-sm text-neutral-600">Comparação por categoria</p>
+            <p className="text-sm text-neutral-600">Comparação por category</p>
           </div>
           <button
             onClick={() => setShowModal(true)}
@@ -312,7 +312,7 @@ export function ExpensesComparison() {
                     Análise Detalhada
                   </h2>
                   <p className="text-sm text-neutral-600">
-                    Comparação completa por categoria
+                    Comparação completa por category
                   </p>
                 </div>
               </div>

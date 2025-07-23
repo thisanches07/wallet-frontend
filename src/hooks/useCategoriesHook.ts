@@ -2,7 +2,7 @@
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/constants/categories";
 
 export function useCategories() {
-  // Retorna as categorias fixas, sem chamadas à API
+  // Retorna as categorys fixas, sem chamadas à API
   return {
     categories: [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES],
     loading: false,

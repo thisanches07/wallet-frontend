@@ -26,7 +26,7 @@ type ApiIncome = {
 interface IncomeData {
   id?: string;
   description: string;
-  categoria: string;
+  category: string;
   valor: number;
   dataRecebimento?: string;
   tipo: "pontual" | "recorrente";
@@ -38,7 +38,7 @@ export function AddIncomeModal({ onClose, onAdd }: AddIncomeModalProps) {
 
   const [form, setForm] = useState<IncomeData>({
     description: "",
-    categoria: "",
+    category: "",
     valor: 0,
     dataRecebimento: new Date().toISOString().split("T")[0],
     tipo: "pontual",
@@ -51,7 +51,7 @@ export function AddIncomeModal({ onClose, onAdd }: AddIncomeModalProps) {
     return {
       id: apiIncome.id.toString(),
       description: apiIncome.description,
-      categoria: apiIncome.category,
+      category: apiIncome.category,
       valor: apiIncome.amount,
       dataRecebimento: apiIncome.startDate.split("T")[0],
       tipo: "pontual",
@@ -65,8 +65,8 @@ export function AddIncomeModal({ onClose, onAdd }: AddIncomeModalProps) {
       newErrors.description = "Descrição é obrigatória";
     }
 
-    if (!form.categoria.trim()) {
-      newErrors.categoria = "Categoria é obrigatória";
+    if (!form.category.trim()) {
+      newErrors.category = "Categoria é obrigatória";
     }
 
     if (form.valor <= 0) {
@@ -105,7 +105,7 @@ export function AddIncomeModal({ onClose, onAdd }: AddIncomeModalProps) {
         amount: form.valor,
         startDate: startDate.toISOString(),
         endDate: endDate?.toISOString(),
-        category: form.categoria,
+        category: form.category,
       };
 
       const apiResponse = await createIncome(apiIncomeData);
@@ -212,11 +212,9 @@ export function AddIncomeModal({ onClose, onAdd }: AddIncomeModalProps) {
                   <button
                     key={category.name}
                     type="button"
-                    onClick={() =>
-                      handleInputChange("categoria", category.name)
-                    }
+                    onClick={() => handleInputChange("category", category.name)}
                     className={`p-3 text-sm font-medium border rounded-lg transition-all flex items-center justify-center gap-2 ${
-                      form.categoria === category.name
+                      form.category === category.name
                         ? "bg-blue-50 text-blue-700 border-blue-300 ring-2 ring-blue-500 ring-opacity-20"
                         : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
                     }`}

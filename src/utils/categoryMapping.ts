@@ -6,10 +6,10 @@ import {
 } from "@/constants/categories";
 
 /**
- * Utilitários para mapear categorias antigas do backend para as novas categorias fixas
+ * Utilitários para mapear categorys antigas do backend para as novas categorys fixas
  */
 
-// Mapeamento de categorias antigas (IDs) para novos nomes
+// Mapeamento de categorys antigas (IDs) para novos nomes
 const categoryIdToNameMap: Record<string, string> = {
   "1": "Aluguel",
   "2": "Transporte",
@@ -61,7 +61,7 @@ const categoryNameMap: Record<string, string> = {
 };
 
 /**
- * Mapeia uma categoria antiga (ID ou nome) para o novo nome padrão
+ * Mapeia uma category antiga (ID ou nome) para o novo nome padrão
  */
 export function mapCategory(categoryInput: string | number): string {
   const categoryStr = categoryInput.toString();
@@ -96,12 +96,12 @@ export function mapCategory(categoryInput: string | number): string {
     return existingCategory.name;
   }
 
-  // Fallback: retorna a categoria original ou "Outros"
+  // Fallback: retorna a category original ou "Outros"
   return categoryStr || "Outros";
 }
 
 /**
- * Obtém o ícone para uma categoria (mapeando se necessário)
+ * Obtém o ícone para uma category (mapeando se necessário)
  */
 export function getCategoryIconSafe(categoryInput: string | number): string {
   const mappedCategory = mapCategory(categoryInput);
@@ -109,7 +109,7 @@ export function getCategoryIconSafe(categoryInput: string | number): string {
 }
 
 /**
- * Obtém a cor para uma categoria (mapeando se necessário)
+ * Obtém a cor para uma category (mapeando se necessário)
  */
 export function getCategoryColorSafe(categoryInput: string | number): string {
   const mappedCategory = mapCategory(categoryInput);
@@ -117,7 +117,7 @@ export function getCategoryColorSafe(categoryInput: string | number): string {
 }
 
 /**
- * Converte dados antigos de categoria (com ID) para o novo formato (string)
+ * Converte dados antigos de category (com ID) para o novo formato (string)
  */
 export function convertCategoryData(oldCategory: any): string {
   if (typeof oldCategory === "string") {

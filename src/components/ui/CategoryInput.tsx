@@ -17,7 +17,7 @@ export function CategoryInput({
   value,
   onChange,
   suggestions,
-  placeholder = "Digite ou selecione uma categoria",
+  placeholder = "Digite ou selecione uma category",
   error,
   disabled,
   className = "",

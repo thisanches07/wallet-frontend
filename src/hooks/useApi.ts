@@ -175,7 +175,7 @@ export function useApi() {
         }
       },
 
-      // Exportar relatório completo por categoria
+      // Exportar relatório completo por category
       exportMonthlySummaryByCategory: async (year: number, month: number) => {
         try {
           const token = localStorage.getItem("authToken");

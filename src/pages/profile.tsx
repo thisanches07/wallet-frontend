@@ -28,15 +28,11 @@ const Profile = () => {
       }
 
       try {
-
         const response = await authService.getUserProfile();
 
-
         if (response.success && response.data) {
-
           setUserBackendData(response.data);
         } else {
-
         }
       } catch (error) {
         console.error("❌ Erro ao buscar dados do usuário:", error);
@@ -67,7 +63,7 @@ const Profile = () => {
       price: "Grátis",
       features: [
         "Controle de despesas básico",
-        "Até 3 categorias",
+        "Até 3 categorys",
         "Relatórios simples",
       ],
       current: true,
@@ -104,7 +100,6 @@ const Profile = () => {
   const handlePlanChange = (planId: string) => {
     setSelectedPlan(planId);
     // Aqui você implementaria a lógica de mudança de plano
-
   };
 
   if (authLoading || loading || !user) {

@@ -54,7 +54,7 @@ export function DashboardHeader({ selectedMonth }: Props) {
     try {
       setIsExportingComplete(true);
 
-      // Fazer a chamada para a API que retorna um blob do relatório completo por categoria
+      // Fazer a chamada para a API que retorna um blob do relatório completo por category
       const monthForAPI = selectedMonthIndex + 1;
       const blob = await api.exportMonthlySummaryByCategory(
         selectedYear,

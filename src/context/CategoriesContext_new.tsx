@@ -26,13 +26,13 @@ export const CategoriesProvider = ({
 }: {
   children: React.ReactNode;
 }) => {
-  // Agora usamos as categorias fixas ao invés de chamadas à API
+  // Agora usamos as categorys fixas ao invés de chamadas à API
   const categories = ALL_CATEGORIES;
   const loading = false;
   const error = null;
 
   const refreshCategories = async () => {
-    // Não faz nada, pois as categorias são fixas
+    // Não faz nada, pois as categorys são fixas
     return Promise.resolve();
   };
 

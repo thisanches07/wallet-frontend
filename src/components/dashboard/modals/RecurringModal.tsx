@@ -11,7 +11,7 @@ import { useState } from "react";
 interface RecurringExpense {
   id: string;
   description: string;
-  categoria: string;
+  category: string;
   valor: number;
   diaVencimento: number;
   ativo: boolean;
@@ -27,7 +27,7 @@ export function RecurringModal({ onClose }: Props) {
     {
       id: "1",
       description: "Aluguel",
-      categoria: "Moradia",
+      category: "Moradia",
       valor: 1200,
       diaVencimento: 5,
       ativo: true,
@@ -36,7 +36,7 @@ export function RecurringModal({ onClose }: Props) {
     {
       id: "2",
       description: "Internet",
-      categoria: "Assinaturas",
+      category: "Assinaturas",
       valor: 80,
       diaVencimento: 10,
       ativo: true,
@@ -45,7 +45,7 @@ export function RecurringModal({ onClose }: Props) {
     {
       id: "3",
       description: "Spotify",
-      categoria: "Assinaturas",
+      category: "Assinaturas",
       valor: 16.9,
       diaVencimento: 15,
       ativo: true,
@@ -57,7 +57,7 @@ export function RecurringModal({ onClose }: Props) {
     .filter((exp) => exp.ativo)
     .reduce((acc, exp) => acc + exp.valor, 0);
 
-  const getCategoryIcon = (categoria: string) => {
+  const getCategoryIcon = (category: string) => {
     const icons: Record<string, string> = {
       Aluguel: "🏠",
       Transporte: "🚗",
@@ -68,10 +68,10 @@ export function RecurringModal({ onClose }: Props) {
       Seguros: "🛡️",
       Outros: "📦",
     };
-    return icons[categoria] || "📝";
+    return icons[category] || "📝";
   };
 
-  const getCategoryColor = (categoria: string) => {
+  const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
       Aluguel: "bg-blue-100 text-blue-700 border-blue-200",
       Transporte: "bg-purple-100 text-purple-700 border-purple-200",
@@ -82,7 +82,7 @@ export function RecurringModal({ onClose }: Props) {
       Seguros: "bg-gray-100 text-gray-700 border-gray-200",
       Outros: "bg-neutral-100 text-neutral-700 border-neutral-200",
     };
-    return colors[categoria] || "bg-gray-100 text-gray-700 border-gray-200";
+    return colors[category] || "bg-gray-100 text-gray-700 border-gray-200";
   };
 
   return (
@@ -171,7 +171,7 @@ export function RecurringModal({ onClose }: Props) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">
-                      {getCategoryIcon(expense.categoria)}
+                      {getCategoryIcon(expense.category)}
                     </span>
                     <div>
                       <h4 className="font-medium text-gray-900">
@@ -180,10 +180,10 @@ export function RecurringModal({ onClose }: Props) {
                       <div className="flex items-center gap-2 mt-1">
                         <span
                           className={`px-2 py-1 rounded-md text-xs font-medium border ${getCategoryColor(
-                            expense.categoria
+                            expense.category
                           )}`}
                         >
-                          {expense.categoria}
+                          {expense.category}
                         </span>
                         <span className="text-xs text-gray-500">
                           Vence dia {expense.diaVencimento}
