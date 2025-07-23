@@ -25,7 +25,7 @@ type ApiIncome = {
 
 interface IncomeData {
   id?: string;
-  descricao: string;
+  description: string;
   categoria: string;
   valor: number;
   dataRecebimento?: string;
@@ -37,7 +37,7 @@ export function AddIncomeModal({ onClose, onAdd }: AddIncomeModalProps) {
   const { createIncome } = useIncomes();
 
   const [form, setForm] = useState<IncomeData>({
-    descricao: "",
+    description: "",
     categoria: "",
     valor: 0,
     dataRecebimento: new Date().toISOString().split("T")[0],
@@ -50,7 +50,7 @@ export function AddIncomeModal({ onClose, onAdd }: AddIncomeModalProps) {
   const convertApiIncomeToIncome = (apiIncome: ApiIncome): IncomeData => {
     return {
       id: apiIncome.id.toString(),
-      descricao: apiIncome.description,
+      description: apiIncome.description,
       categoria: apiIncome.category,
       valor: apiIncome.amount,
       dataRecebimento: apiIncome.startDate.split("T")[0],
@@ -61,8 +61,8 @@ export function AddIncomeModal({ onClose, onAdd }: AddIncomeModalProps) {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!form.descricao.trim()) {
-      newErrors.descricao = "Descrição é obrigatória";
+    if (!form.description.trim()) {
+      newErrors.description = "Descrição é obrigatória";
     }
 
     if (!form.categoria.trim()) {
@@ -101,7 +101,7 @@ export function AddIncomeModal({ onClose, onAdd }: AddIncomeModalProps) {
       }
 
       const apiIncomeData = {
-        description: form.descricao,
+        description: form.description,
         amount: form.valor,
         startDate: startDate.toISOString(),
         endDate: endDate?.toISOString(),
@@ -186,17 +186,19 @@ export function AddIncomeModal({ onClose, onAdd }: AddIncomeModalProps) {
               </label>
               <input
                 type="text"
-                value={form.descricao}
-                onChange={(e) => handleInputChange("descricao", e.target.value)}
+                value={form.description}
+                onChange={(e) =>
+                  handleInputChange("description", e.target.value)
+                }
                 placeholder="Ex: Salário Empresa X, Projeto Freelance..."
                 className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
-                  errors.descricao
+                  errors.description
                     ? "border-red-500 bg-red-50"
                     : "border-gray-300"
                 }`}
               />
-              {errors.descricao && (
-                <p className="text-red-500 text-xs">{errors.descricao}</p>
+              {errors.description && (
+                <p className="text-red-500 text-xs">{errors.description}</p>
               )}
             </div>
 

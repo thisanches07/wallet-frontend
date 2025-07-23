@@ -4,8 +4,9 @@ export const convertApiExpenseToExpense = (
   apiExpense: ApiExpense
 ): Expense => ({
   id: apiExpense.id, // Manter como number
-  descricao: apiExpense.description,
+  description: apiExpense.description,
   categoria: apiExpense.category,
   valor: Number(apiExpense.amount), // Garantir que é número
   data: apiExpense.date.split("T")[0], // Converter ISO date para YYYY-MM-DD
+  source: apiExpense.source,
 });

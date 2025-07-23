@@ -15,9 +15,10 @@ import { useApi } from "../hooks/useApi";
 interface IncomeData {
   id: number;
   tipo: "recorrente" | "pontual";
-  descricao: string;
+  description: string;
   amount: number;
   categoria: "salario" | "freelance" | "investimento" | "bonus" | "outros";
+  source: "MANUAL" | "PLUGGY";
 }
 
 interface MonthlyDataState {
@@ -101,7 +102,9 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
         year: year,
       });
 
+      console.log(" resposta da API:", apiExpenses);
       if (Array.isArray(apiExpenses)) {
+        console.log(" expenses encontradas:", apiExpenses);
         return apiExpenses.map(convertApiExpenseToExpense);
       } else {
         // Fallback: buscar todas e filtrar localmente
@@ -299,11 +302,12 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
         // Verificar se o expense está no formato correto
         const formattedExpense = {
           id: expense.id,
-          descricao: expense.descricao,
+          description: expense.description,
           categoria: expense.categoria,
           valor: Number(expense.valor),
           data: expense.data,
           tipo: expense.tipo || "unico",
+          source: expense.source,
         };
 
         // Adicionar o novo expense aos dados existentes
@@ -354,9 +358,10 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
       const contextIncome: IncomeData = {
         id: parseInt(income.id),
         tipo: income.tipo || "pontual",
-        descricao: income.descricao,
+        description: income.description,
         amount: Number(income.valor || income.amount),
         categoria: income.categoria,
+        source: income.source,
       };
 
       // Adicionar o novo income aos dados existentes

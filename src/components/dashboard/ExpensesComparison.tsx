@@ -42,7 +42,7 @@ export function ExpensesComparison() {
         // Verificar se há token antes de fazer a chamada
         const { authService } = await import("@/services/authService");
         const token = authService.getToken();
-        
+
         if (!token) {
           setAllocationData(null);
           return;

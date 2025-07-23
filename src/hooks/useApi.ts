@@ -61,14 +61,23 @@ export function useApi() {
         const query = params.toString() ? `?${params.toString()}` : "";
         return apiCall(`/api/transactions${query}`);
       },
-      getExpenses: (filters?: { month?: number; year?: number }) => {
+      getExpenses: async (filters?: { month?: number; year?: number }) => {
         const params = new URLSearchParams();
-        if (filters?.month !== undefined)
+
+        // Adiciona filtros à query string se definidos
+        if (filters?.month !== undefined) {
           params.append("month", filters.month.toString());
-        if (filters?.year !== undefined)
+        }
+
+        if (filters?.year !== undefined) {
           params.append("year", filters.year.toString());
+        }
+
+        // Monta a query string final
         const query = params.toString() ? `?${params.toString()}` : "";
-        return apiCall(`/api/expenses${query}`);
+        console.log("chamando API com query:", query);
+        // Faz a chamada à API
+        return await apiCall(`/api/expenses${query}`);
       },
       createExpense: (expense: any) =>
         apiCall("/api/expenses", {

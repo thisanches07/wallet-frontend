@@ -176,7 +176,7 @@ export default function IncomesListModal({
                       </div>
                       <div>
                         <h3 className="font-semibold text-neutral-900">
-                          {income.descricao || "Receita"}
+                          {income.description || "Receita"}
                         </h3>
                         <div className="flex items-center gap-4 mt-1">
                           {income.tipo && (
@@ -210,16 +210,33 @@ export default function IncomesListModal({
 
                     <button
                       onClick={() => handleDelete(income.id)}
-                      disabled={deletingId === income.id}
-                      className="p-2 hover:bg-danger-50 rounded-lg transition-colors group disabled:opacity-50"
-                      title="Excluir receita"
+                      disabled={
+                        income.source !== "MANUAL" || deletingId === income.id
+                      }
+                      className={`
+    p-2 rounded-lg transition-colors group
+    ${
+      income.source !== "MANUAL"
+        ? "opacity-50 cursor-not-allowed"
+        : "hover:bg-danger-50"
+    }
+  `}
+                      title={
+                        income.source !== "MANUAL"
+                          ? "Receita importada do Open Finance"
+                          : "Excluir receita"
+                      }
                     >
                       {deletingId === income.id ? (
                         <div className="w-4 h-4 border-2 border-danger-600 border-t-transparent rounded-full animate-spin" />
                       ) : (
                         <Trash2
                           size={16}
-                          className="text-neutral-400 group-hover:text-danger-600"
+                          className={`${
+                            income.source !== "MANUAL"
+                              ? "text-neutral-300"
+                              : "text-neutral-400 group-hover:text-danger-600"
+                          }`}
                         />
                       )}
                     </button>

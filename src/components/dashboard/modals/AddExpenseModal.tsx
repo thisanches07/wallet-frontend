@@ -24,23 +24,25 @@ type ApiExpense = {
 
 interface ExpenseData {
   id?: string;
-  descricao: string;
+  description: string;
   categoria: string;
   valor: number;
   data: string;
   tipo: "unico" | "recorrente";
   recorrencia?: "diaria" | "semanal" | "mensal" | "anual";
+  source: "MANUAL" | "PLUGGY";
 }
 
 export function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
   const { createExpense } = useExpenses();
 
   const [formData, setFormData] = useState<ExpenseData>({
-    descricao: "",
+    description: "",
     categoria: "",
     valor: 0,
     data: new Date().toISOString().split("T")[0],
     tipo: "unico",
+    source: "MANUAL",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -49,19 +51,20 @@ export function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
   const convertApiExpenseToExpense = (apiExpense: ApiExpense): ExpenseData => {
     return {
       id: apiExpense.id.toString(),
-      descricao: apiExpense.description,
+      description: apiExpense.description,
       categoria: apiExpense.category,
       valor: apiExpense.amount,
       data: apiExpense.date,
       tipo: "unico",
+      source: "MANUAL",
     };
   };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.descricao.trim()) {
-      newErrors.descricao = "Descrição é obrigatória";
+    if (!formData.description.trim()) {
+      newErrors.description = "Descrição é obrigatória";
     }
 
     if (!formData.categoria.trim()) {
@@ -94,7 +97,7 @@ export function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
       startDate.setHours(0, 0, 0, 0);
 
       const apiExpenseData = {
-        description: formData.descricao,
+        description: formData.description,
         amount: formData.valor,
         date: startDate.toISOString(),
         category: formData.categoria,
@@ -179,17 +182,19 @@ export function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
               </label>
               <input
                 type="text"
-                value={formData.descricao}
-                onChange={(e) => handleInputChange("descricao", e.target.value)}
+                value={formData.description}
+                onChange={(e) =>
+                  handleInputChange("description", e.target.value)
+                }
                 placeholder="Ex: Aluguel, Supermercado, Gasolina..."
                 className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors ${
-                  errors.descricao
+                  errors.description
                     ? "border-red-500 bg-red-50"
                     : "border-gray-300"
                 }`}
               />
-              {errors.descricao && (
-                <p className="text-red-500 text-xs">{errors.descricao}</p>
+              {errors.description && (
+                <p className="text-red-500 text-xs">{errors.description}</p>
               )}
             </div>
 

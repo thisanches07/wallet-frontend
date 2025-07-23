@@ -1,11 +1,12 @@
 export type Expense = {
-  id: number; // Mantém como number já que vem da API
-  descricao: string;
-  categoria: string; // Mudança: agora é string ao invés de ID
+  id: number;
+  description: string;
+  categoria: string;
   valor: number;
   data: string;
   tipo?: "unico" | "recorrente";
   recorrencia?: "mensal" | "semanal" | "anual";
+  source: "MANUAL" | "PLUGGY";
 };
 
 export type ApiExpense = {
@@ -13,11 +14,12 @@ export type ApiExpense = {
   description: string;
   amount: number;
   date: string;
-  category: string; // Mudança: agora é string ao invés de categoryId
+  category: string;
   user: {
     id: number;
     firebase_uuid: string;
     name: string;
     email: string;
   };
+  source: "MANUAL" | "PLUGGY";
 };

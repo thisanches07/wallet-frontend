@@ -8,7 +8,7 @@ import { useAuth } from "./useAuth";
 
 interface IncomeData {
   tipo: "recorrente" | "pontual";
-  descricao: string;
+  description: string;
   amount: number;
   categoria: "salario" | "freelance" | "investimento" | "bonus" | "outros";
 }

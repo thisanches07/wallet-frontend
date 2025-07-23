@@ -10,7 +10,7 @@ import { useState } from "react";
 
 interface RecurringExpense {
   id: string;
-  descricao: string;
+  description: string;
   categoria: string;
   valor: number;
   diaVencimento: number;
@@ -26,7 +26,7 @@ export function RecurringModal({ onClose }: Props) {
   const [expenses] = useState<RecurringExpense[]>([
     {
       id: "1",
-      descricao: "Aluguel",
+      description: "Aluguel",
       categoria: "Moradia",
       valor: 1200,
       diaVencimento: 5,
@@ -35,7 +35,7 @@ export function RecurringModal({ onClose }: Props) {
     },
     {
       id: "2",
-      descricao: "Internet",
+      description: "Internet",
       categoria: "Assinaturas",
       valor: 80,
       diaVencimento: 10,
@@ -44,7 +44,7 @@ export function RecurringModal({ onClose }: Props) {
     },
     {
       id: "3",
-      descricao: "Spotify",
+      description: "Spotify",
       categoria: "Assinaturas",
       valor: 16.9,
       diaVencimento: 15,
@@ -175,7 +175,7 @@ export function RecurringModal({ onClose }: Props) {
                     </span>
                     <div>
                       <h4 className="font-medium text-gray-900">
-                        {expense.descricao}
+                        {expense.description}
                       </h4>
                       <div className="flex items-center gap-2 mt-1">
                         <span
