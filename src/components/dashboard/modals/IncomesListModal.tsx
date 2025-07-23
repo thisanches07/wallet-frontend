@@ -113,11 +113,10 @@ export default function IncomesListModal({
 
   const getCategoryIcon = (categoria: string) => {
     const icons: Record<string, string> = {
-      salario: "💼",
-      freelance: "💻",
-      investimento: "📈",
-      bonus: "🎁",
-      outros: "💰",
+      Salário: "💼",
+      Freelance: "💻",
+      Investimentos: "📈",
+      Outros: "💰",
     };
     return icons[categoria] || "💰";
   };

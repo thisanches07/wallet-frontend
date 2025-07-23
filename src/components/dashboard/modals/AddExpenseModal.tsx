@@ -1,4 +1,4 @@
-import { useCategories } from "@/context/CategoriesContext";
+import { EXPENSE_CATEGORIES } from "@/constants/categories";
 import { useExpenses } from "@/hooks/useApi";
 import { Calendar, DollarSign, Receipt, Tag, X } from "lucide-react";
 import { useState } from "react";
@@ -13,107 +13,31 @@ type ApiExpense = {
   description: string;
   amount: number;
   date: string;
-  categoryId: number;
+  category: string;
   user: {
     id: number;
     firebase_uuid: string;
     name: string;
     email: string;
   };
-  category: {
-    id: number;
-    name: string;
-    type: string;
-  };
 };
 
 interface ExpenseData {
   id?: string;
   descricao: string;
-  categoria: string; // ID da categoria
+  categoria: string;
   valor: number;
   data: string;
   tipo: "unico" | "recorrente";
-  recorrencia?: "mensal" | "semanal" | "anual";
-  categoriaInfo?: {
-    id: string;
-    name: string;
-    icon?: string;
-    color?: string;
-    type?: string;
-  };
+  recorrencia?: "diaria" | "semanal" | "mensal" | "anual";
 }
-
-// Categorias fallback caso não consiga carregar do backend
-const fallbackCategories = [
-  {
-    id: "moradia",
-    name: "Moradia",
-    icon: "🏠",
-    color: "#3B82F6",
-    type: "expense" as const,
-  },
-  {
-    id: "transporte",
-    name: "Transporte",
-    icon: "🚗",
-    color: "#8B5CF6",
-    type: "expense" as const,
-  },
-  {
-    id: "alimentacao",
-    name: "Alimentação",
-    icon: "🍔",
-    color: "#10B981",
-    type: "expense" as const,
-  },
-  {
-    id: "lazer",
-    name: "Lazer",
-    icon: "🎮",
-    color: "#EC4899",
-    type: "expense" as const,
-  },
-  {
-    id: "saude",
-    name: "Saúde",
-    icon: "⚕️",
-    color: "#EF4444",
-    type: "expense" as const,
-  },
-  {
-    id: "educacao",
-    name: "Educação",
-    icon: "📚",
-    color: "#6366F1",
-    type: "expense" as const,
-  },
-  {
-    id: "outros",
-    name: "Outros",
-    icon: "📝",
-    color: "#6B7280",
-    type: "expense" as const,
-  },
-];
 
 export function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
   const { createExpense } = useExpenses();
-  const {
-    getExpenseCategories,
-    loading: categoriesLoading,
-    error: categoriesError,
-    getCategoryById,
-  } = useCategories();
-  const apiCategories = getExpenseCategories();
-
-  // Usar categorias da API ou fallback
-  const categories =
-    apiCategories.length > 0 ? apiCategories : fallbackCategories;
 
   const [formData, setFormData] = useState<ExpenseData>({
     descricao: "",
-    categoria: "", // Inicialmente vazio
+    categoria: "",
     valor: 0,
     data: new Date().toISOString().split("T")[0],
     tipo: "unico",
@@ -122,55 +46,29 @@ export function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Helper para obter informações da categoria selecionada
-  const getSelectedCategoryInfo = () => {
-    if (!formData.categoria) return null;
-    return categories.find((cat) => cat.id === formData.categoria) || null;
-  };
-
-  // Função para converter API response para formato interno
-  // API retorna: { id, description, amount, date, categoryId, user, category: { id, name, type } }
-  // Convertemos para: { id, descricao, categoria, valor, data, tipo, categoriaInfo }
   const convertApiExpenseToExpense = (apiExpense: ApiExpense): ExpenseData => {
-    // Buscar informações adicionais da categoria (ícone e cor) das categorias locais
-    const localCategory = categories.find(
-      (cat) =>
-        cat.name.toLowerCase() === apiExpense.category.name.toLowerCase() ||
-        cat.id === apiExpense.category.id.toString()
-    );
-
     return {
       id: apiExpense.id.toString(),
       descricao: apiExpense.description,
-      categoria: apiExpense.category.name,
+      categoria: apiExpense.category,
       valor: apiExpense.amount,
-      data: apiExpense.date.split("T")[0], // Converter ISO date para YYYY-MM-DD
+      data: apiExpense.date,
       tipo: "unico",
-      categoriaInfo: {
-        id: apiExpense.category.id.toString(),
-        name: apiExpense.category.name,
-        icon: localCategory?.icon || "📝",
-        color: localCategory?.color || "#6B7280",
-        type: apiExpense.category.type,
-      },
     };
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Validação
+  const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.descricao.trim()) {
       newErrors.descricao = "Descrição é obrigatória";
     }
 
-    if (!formData.categoria) {
+    if (!formData.categoria.trim()) {
       newErrors.categoria = "Categoria é obrigatória";
     }
 
-    if (!formData.valor || formData.valor <= 0) {
+    if (formData.valor <= 0) {
       newErrors.valor = "Valor deve ser maior que zero";
     }
 
@@ -178,63 +76,45 @@ export function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
       newErrors.data = "Data é obrigatória";
     }
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Preparar dados para a API
-      const selectedCategory = getSelectedCategoryInfo();
+      const startDate = new Date(formData.data);
+      startDate.setHours(0, 0, 0, 0);
+
       const apiExpenseData = {
         description: formData.descricao,
         amount: formData.valor,
-        date: new Date(formData.data).toISOString(),
-        categoryId: selectedCategory?.id
-          ? parseInt(selectedCategory.id)
-          : parseInt(formData.categoria), // Fallback para o ID da categoria
+        date: startDate.toISOString(),
+        category: formData.categoria,
       };
 
-      // Criar na API
-      const createdExpense = (await createExpense(
-        apiExpenseData
-      )) as ApiExpense;
-
-      // Converter resposta da API para formato interno
-      const newExpense = convertApiExpenseToExpense(createdExpense);
-
-      // Chamar callback para atualizar a lista no componente pai
-      onAdd(newExpense);
-      window.dispatchEvent(
-        new CustomEvent("expenseAdded", { detail: newExpense })
+      const apiResponse = await createExpense(apiExpenseData);
+      const convertedExpense = convertApiExpenseToExpense(
+        apiResponse as ApiExpense
       );
 
-      // Fechar modal
+      onAdd(convertedExpense);
+      window.dispatchEvent(
+        new CustomEvent("expenseAdded", { detail: convertedExpense })
+      );
       onClose();
     } catch (error) {
       console.error("Erro ao criar despesa:", error);
-
-      // Em caso de erro, criar localmente como fallback
-      const selectedCategory = getSelectedCategoryInfo();
-      const fallbackExpense: ExpenseData = {
-        id: Date.now().toString(),
-        descricao: formData.descricao,
-        categoria: selectedCategory?.name || formData.categoria,
-        valor: formData.valor,
-        data: formData.data,
-        tipo: formData.tipo,
-        recorrencia: formData.recorrencia,
-        ...(selectedCategory && { categoriaInfo: selectedCategory }),
-      };
-
-      onAdd(fallbackExpense);
-      window.dispatchEvent(
-        new CustomEvent("expenseAdded", { detail: fallbackExpense })
-      );
-
-      onClose();
+      setErrors({
+        submit: "Erro ao criar despesa. Tente novamente.",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -242,7 +122,6 @@ export function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
 
   const handleInputChange = (field: keyof ExpenseData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Limpar erro do campo quando usuário começar a digitar
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
@@ -277,9 +156,7 @@ export function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
               </div>
             </div>
             <button
-              onClick={() => {
-                onClose();
-              }}
+              onClick={onClose}
               className="p-2 hover:bg-white/20 rounded-lg transition-colors"
             >
               <X className="w-5 h-5" />
@@ -317,58 +194,32 @@ export function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
             </div>
 
             {/* Categoria */}
-            <div className="space-y-3">
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                <Tag className="w-4 h-4" />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Categoria
-                {categoriesLoading && (
-                  <span className="inline-flex items-center gap-1 text-xs text-blue-600">
-                    <div className="w-3 h-3 border border-blue-300 border-t-blue-600 rounded-full animate-spin"></div>
-                    Carregando...
-                  </span>
-                )}
-                {!categoriesLoading && apiCategories.length > 0 && (
-                  <span className="text-xs text-green-600">
-                    ✓ {apiCategories.length} categorias
-                  </span>
-                )}
-                {!categoriesLoading && apiCategories.length === 0 && (
-                  <span className="text-xs text-amber-600">
-                    ⚠️ Modo offline
-                  </span>
-                )}
               </label>
-              <div
-                className={`grid grid-cols-2 gap-2 ${
-                  errors.categoria
-                    ? "ring-2 ring-red-500 ring-opacity-20 rounded-xl p-2"
-                    : ""
-                }`}
-              >
-                {categories.map((category) => (
+              <div className="grid grid-cols-2 gap-2">
+                {EXPENSE_CATEGORIES.map((category) => (
                   <button
                     key={category.id}
                     type="button"
-                    onClick={() => handleInputChange("categoria", category.id)}
-                    className={`p-3 text-xs font-medium border rounded-xl transition-all ${
-                      formData.categoria === category.id
-                        ? "bg-blue-50 text-blue-700 border-blue-300 ring-2 ring-blue-500 ring-opacity-20"
+                    onClick={() =>
+                      handleInputChange("categoria", category.name)
+                    }
+                    className={`p-3 text-sm font-medium border rounded-xl transition-all flex items-center gap-2 ${
+                      formData.categoria === category.name
+                        ? "bg-red-50 text-red-700 border-red-300 ring-2 ring-red-500 ring-opacity-20"
                         : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
                     }`}
-                    disabled={categoriesLoading}
+                    disabled={isSubmitting}
                   >
-                    {category.icon} {category.name}
+                    <span className="text-lg">{category.icon}</span>
+                    <span>{category.name}</span>
                   </button>
                 ))}
               </div>
               {errors.categoria && (
-                <p className="text-red-500 text-xs">{errors.categoria}</p>
-              )}
-              {!categoriesLoading && apiCategories.length === 0 && (
-                <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-2">
-                  ⚠️ Não foi possível carregar as categorias do servidor. Usando
-                  categorias padrão.
-                </p>
+                <p className="text-red-500 text-xs mt-1">{errors.categoria}</p>
               )}
             </div>
 
@@ -425,36 +276,12 @@ export function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
               </div>
             </div>
 
-            {/* Tipo de Gasto */}
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-gray-700">
-                Tipo de Gasto
-              </label>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => handleInputChange("tipo", "unico")}
-                  className={`flex-1 p-3 text-sm font-medium border rounded-xl transition-all ${
-                    formData.tipo === "unico"
-                      ? "bg-blue-50 text-blue-700 border-blue-300 ring-2 ring-blue-500 ring-opacity-20"
-                      : "bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100"
-                  }`}
-                >
-                  💸 Gasto Único
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleInputChange("tipo", "recorrente")}
-                  className={`flex-1 p-3 text-sm font-medium border rounded-xl transition-all ${
-                    formData.tipo === "recorrente"
-                      ? "bg-orange-50 text-orange-700 border-orange-300 ring-2 ring-orange-500 ring-opacity-20"
-                      : "bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100"
-                  }`}
-                >
-                  🔄 Recorrente
-                </button>
+            {/* Erro geral */}
+            {errors.submit && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-red-600 text-sm">{errors.submit}</p>
               </div>
-            </div>
+            )}
           </form>
         </div>
 
@@ -471,7 +298,7 @@ export function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
             <button
               type="submit"
               form="expense-form"
-              disabled={isSubmitting || categoriesLoading}
+              disabled={isSubmitting}
               className="flex-1 px-6 py-4 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white rounded-2xl font-medium transition-all shadow-lg hover:shadow-xl text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isSubmitting ? (

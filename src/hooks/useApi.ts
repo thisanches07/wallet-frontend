@@ -115,8 +115,6 @@ export function useApi() {
           method: "DELETE",
         });
       },
-      // Categorias
-      getCategories: () => apiCall("/api/categories"),
 
       // Relatórios
       getReports: (params?: any) => {

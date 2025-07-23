@@ -10,17 +10,12 @@ type ApiExpense = {
   description: string;
   amount: number;
   date: string;
-  categoryId: number;
+  category: string; // Mudança: agora é string ao invés de categoryId
   user: {
     id: number;
     firebase_uuid: string;
     name: string;
     email: string;
-  };
-  category: {
-    id: number;
-    name: string;
-    type: string;
   };
 };
 
@@ -87,7 +82,7 @@ export function MonthlyExpenses() {
 
   const getCategoryIcon = (categoria: string): string => {
     const iconMap: Record<string, string> = {
-      Moradia: "🏠",
+      Aluguel: "🏠",
       Transporte: "🚗",
       Alimentação: "🍔",
       Lazer: "🎮",
@@ -100,7 +95,7 @@ export function MonthlyExpenses() {
 
   const getCategoryColor = (categoria: string): string => {
     const colorMap: Record<string, string> = {
-      Moradia: "bg-primary-100 text-primary-700 border-primary-200",
+      Aluguel: "bg-primary-100 text-primary-700 border-primary-200",
       Transporte: "bg-purple-100 text-purple-700 border-purple-200",
       Alimentação: "bg-success-100 text-success-700 border-success-200",
       Lazer: "bg-pink-100 text-pink-700 border-pink-200",

@@ -1,7 +1,12 @@
-import { useCategories } from "@/context/CategoriesContext";
+import { INCOME_CATEGORIES } from "@/constants/categories";
 import { useIncomes } from "@/hooks/useApi";
 import { Calendar, DollarSign, Tag, X } from "lucide-react";
 import { useState } from "react";
+
+interface AddIncomeModalProps {
+  onClose: () => void;
+  onAdd: (income: IncomeData) => void;
+}
 
 type ApiIncome = {
   id: number;
@@ -9,126 +14,59 @@ type ApiIncome = {
   amount: number;
   startDate: string;
   endDate: string;
-  category: {
+  category: string;
+  user: {
     id: number;
+    firebase_uuid: string;
     name: string;
-    type: string;
+    email: string;
   };
 };
 
 interface IncomeData {
   id?: string;
-  tipo: "recorrente" | "pontual";
   descricao: string;
-  valor: number;
   categoria: string;
-  categoriaInfo?: {
-    id: string;
-    name: string;
-    icon: string;
-    color: string;
-    type: string;
-  };
+  valor: number;
   dataRecebimento?: string;
-  recorrencia?: "mensal" | "quinzenal" | "semanal";
+  tipo: "pontual" | "recorrente";
+  recorrencia?: "diaria" | "semanal" | "mensal" | "anual";
 }
 
-interface Props {
-  onClose: () => void;
-  onAdd: (income: IncomeData) => void;
-}
-
-export function AddIncomeModal({ onClose, onAdd }: Props) {
+export function AddIncomeModal({ onClose, onAdd }: AddIncomeModalProps) {
   const { createIncome } = useIncomes();
+
+  const [form, setForm] = useState<IncomeData>({
+    descricao: "",
+    categoria: "",
+    valor: 0,
+    dataRecebimento: new Date().toISOString().split("T")[0],
+    tipo: "pontual",
+  });
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const {
-    getIncomeCategories,
-    loading: categoriesLoading,
-    error: categoriesError,
-    getCategoryById,
-  } = useCategories();
-  const apiCategories = getIncomeCategories();
-
-  const [form, setForm] = useState<IncomeData>({
-    tipo: "recorrente",
-    descricao: "",
-    valor: 0,
-    categoria: "",
-    recorrencia: "mensal",
-    dataRecebimento: new Date().toISOString().split("T")[0],
-  });
-
-  // Helper para obter informações da categoria selecionada
-  const getSelectedCategoryInfo = () => {
-    if (!form.categoria) return null;
-    return apiCategories.find((cat) => cat.id === form.categoria) || null;
-  };
-
-  // Função para converter API response para formato interno
   const convertApiIncomeToIncome = (apiIncome: ApiIncome): IncomeData => {
-    // Buscar informações adicionais da categoria (ícone e cor) das categorias locais
-    const localCategory = apiCategories.find(
-      (cat) =>
-        cat.name.toLowerCase() === apiIncome.category.name.toLowerCase() ||
-        cat.id === apiIncome.category.id.toString()
-    );
-
-    // Determinar se é recorrente ou pontual baseado nas datas
-    const startDate = new Date(apiIncome.startDate);
-    const endDate = new Date(apiIncome.endDate);
-
-    // Se a data de fim é muito no futuro (ano 2099), é uma receita recorrente mensal
-    // Se as datas são do mesmo dia, é uma receita pontual
-    const isRecurring = endDate.getFullYear() >= 2099;
-    const isSameDay = startDate.toDateString() === endDate.toDateString();
-
-    let tipo: "recorrente" | "pontual";
-    let recorrencia: "mensal" | "quinzenal" | "semanal" | undefined;
-
-    if (isRecurring) {
-      tipo = "recorrente";
-      recorrencia = "mensal"; // Por enquanto só suportamos mensais
-    } else if (isSameDay) {
-      tipo = "pontual";
-      recorrencia = undefined;
-    } else {
-      // Fallback - se não é nem recorrente nem do mesmo dia, considera como pontual
-      tipo = "pontual";
-      recorrencia = undefined;
-    }
-
     return {
       id: apiIncome.id.toString(),
       descricao: apiIncome.description,
-      categoria: apiIncome.category.name,
+      categoria: apiIncome.category,
       valor: apiIncome.amount,
       dataRecebimento: apiIncome.startDate.split("T")[0],
-      tipo: tipo,
-      recorrencia: recorrencia,
-      categoriaInfo: {
-        id: apiIncome.category.id.toString(),
-        name: apiIncome.category.name,
-        icon: localCategory?.icon || "💰",
-        color: localCategory?.color || "#10B981",
-        type: apiIncome.category.type,
-      },
+      tipo: "pontual",
     };
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Validação
+  const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
     if (!form.descricao.trim()) {
       newErrors.descricao = "Descrição é obrigatória";
     }
 
-    if (!form.categoria) {
-      newErrors.categoria = "Selecione uma categoria";
+    if (!form.categoria.trim()) {
+      newErrors.categoria = "Categoria é obrigatória";
     }
 
     if (form.valor <= 0) {
@@ -139,24 +77,27 @@ export function AddIncomeModal({ onClose, onAdd }: Props) {
       newErrors.dataRecebimento = "Data é obrigatória";
     }
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Preparar dados para a API
-      const selectedCategory = getSelectedCategoryInfo();
       const startDate = new Date(form.dataRecebimento!);
-      startDate.setHours(0, 0, 0, 0); // Início do dia
+      startDate.setHours(0, 0, 0, 0);
 
       let endDate: Date | undefined = undefined;
       if (form.tipo === "pontual") {
-        // Para receitas pontuais, início e fim no mesmo dia
         endDate = new Date(startDate);
-        endDate.setHours(23, 59, 59, 999); // Final do dia
+        endDate.setHours(23, 59, 59, 999);
       }
 
       const apiIncomeData = {
@@ -164,53 +105,24 @@ export function AddIncomeModal({ onClose, onAdd }: Props) {
         amount: form.valor,
         startDate: startDate.toISOString(),
         endDate: endDate?.toISOString(),
-        categoryId: selectedCategory?.id
-          ? parseInt(selectedCategory.id)
-          : parseInt(form.categoria),
+        category: form.categoria,
       };
 
-      // Criar na API
-      const createdIncome = (await createIncome(apiIncomeData)) as ApiIncome;
-
-      // Converter resposta da API para formato interno
-      const newIncome = convertApiIncomeToIncome(createdIncome);
-
-      // Chamar callback para atualizar a lista no componente pai
-      onAdd(newIncome);
-      window.dispatchEvent(
-        new CustomEvent("incomeAdded", { detail: newIncome })
+      const apiResponse = await createIncome(apiIncomeData);
+      const convertedIncome = convertApiIncomeToIncome(
+        apiResponse as ApiIncome
       );
-      // Fechar modal
+
+      onAdd(convertedIncome);
+      window.dispatchEvent(
+        new CustomEvent("incomeAdded", { detail: convertedIncome })
+      );
       onClose();
     } catch (error) {
       console.error("Erro ao criar receita:", error);
-
-      // Em caso de erro, criar localmente como fallback
-      const selectedCategory = getSelectedCategoryInfo();
-      const fallbackIncome: IncomeData = {
-        id: Date.now().toString(),
-        descricao: form.descricao,
-        categoria: selectedCategory?.name || form.categoria,
-        valor: form.valor,
-        dataRecebimento: form.dataRecebimento,
-        tipo: form.tipo,
-        recorrencia: form.recorrencia,
-        ...(selectedCategory && {
-          categoriaInfo: {
-            id: selectedCategory.id,
-            name: selectedCategory.name,
-            icon: selectedCategory.icon || "💰",
-            color: selectedCategory.color || "#10B981",
-            type: selectedCategory.type || "income",
-          },
-        }),
-      };
-
-      onAdd(fallbackIncome);
-      window.dispatchEvent(
-        new CustomEvent("incomeAdded", { detail: fallbackIncome })
-      );
-      onClose();
+      setErrors({
+        submit: "Erro ao criar receita. Tente novamente.",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -218,14 +130,10 @@ export function AddIncomeModal({ onClose, onAdd }: Props) {
 
   const handleInputChange = (field: keyof IncomeData, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
-    // Limpar erro do campo quando usuário começar a digitar
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
-
-  // Categorias da API
-  const categories = apiCategories;
 
   return (
     <div
@@ -293,59 +201,31 @@ export function AddIncomeModal({ onClose, onAdd }: Props) {
             </div>
 
             {/* Categoria */}
-            <div className="space-y-3">
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                <Tag className="w-4 h-4" />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Categoria
-                {categoriesLoading && (
-                  <span className="inline-flex items-center gap-1 text-xs text-blue-600">
-                    <div className="w-3 h-3 border border-blue-300 border-t-blue-600 rounded-full animate-spin"></div>
-                    Carregando...
-                  </span>
-                )}
-                {!categoriesLoading && apiCategories.length > 0 && (
-                  <span className="text-xs text-green-600">
-                    ✓ {apiCategories.length} categorias
-                  </span>
-                )}
-                {!categoriesLoading && apiCategories.length === 0 && (
-                  <span className="text-xs text-amber-600">
-                    ⚠️ Modo offline
-                  </span>
-                )}
               </label>
-              <div
-                className={`grid grid-cols-2 gap-2 ${
-                  errors.categoria
-                    ? "ring-2 ring-red-500 ring-opacity-20 rounded-xl p-2"
-                    : ""
-                }`}
-              >
-                {categories.map((category) => (
+              <div className="grid grid-cols-2 gap-2">
+                {INCOME_CATEGORIES.map((category) => (
                   <button
-                    key={category.id}
+                    key={category.name}
                     type="button"
-                    onClick={() => handleInputChange("categoria", category.id)}
-                    className={`p-3 text-xs font-medium border rounded-xl transition-all ${
-                      form.categoria === category.id
+                    onClick={() =>
+                      handleInputChange("categoria", category.name)
+                    }
+                    className={`p-3 text-sm font-medium border rounded-lg transition-all flex items-center justify-center gap-2 ${
+                      form.categoria === category.name
                         ? "bg-blue-50 text-blue-700 border-blue-300 ring-2 ring-blue-500 ring-opacity-20"
                         : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
                     }`}
-                    disabled={categoriesLoading}
                   >
-                    {category.icon} {category.name}
+                    <span style={{ color: category.color }}>
+                      {category.icon}
+                    </span>
+                    <span>{category.name}</span>
                   </button>
                 ))}
               </div>
-              {errors.categoria && (
-                <p className="text-red-500 text-xs">{errors.categoria}</p>
-              )}
-              {!categoriesLoading && apiCategories.length === 0 && (
-                <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-2">
-                  ⚠️ Não foi possível carregar as categorias do servidor. Usando
-                  categorias padrão.
-                </p>
-              )}
             </div>
 
             {/* Valor e Data */}
@@ -410,36 +290,12 @@ export function AddIncomeModal({ onClose, onAdd }: Props) {
               </div>
             </div>
 
-            {/* Tipo de Receita */}
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-gray-700">
-                Tipo de Receita
-              </label>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => handleInputChange("tipo", "pontual")}
-                  className={`flex-1 p-3 text-sm font-medium border rounded-xl transition-all ${
-                    form.tipo === "pontual"
-                      ? "bg-blue-50 text-blue-700 border-blue-300 ring-2 ring-blue-500 ring-opacity-20"
-                      : "bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100"
-                  }`}
-                >
-                  💰 Receita Única
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleInputChange("tipo", "recorrente")}
-                  className={`flex-1 p-3 text-sm font-medium border rounded-xl transition-all ${
-                    form.tipo === "recorrente"
-                      ? "bg-green-50 text-green-700 border-green-300 ring-2 ring-green-500 ring-opacity-20"
-                      : "bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100"
-                  }`}
-                >
-                  🔄 Recorrente
-                </button>
+            {/* Erro geral */}
+            {errors.submit && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-red-600 text-sm">{errors.submit}</p>
               </div>
-            </div>
+            )}
           </form>
         </div>
 
@@ -456,7 +312,7 @@ export function AddIncomeModal({ onClose, onAdd }: Props) {
             <button
               type="submit"
               form="income-form"
-              disabled={isSubmitting || categoriesLoading}
+              disabled={isSubmitting}
               className="flex-1 px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-2xl font-medium transition-all shadow-lg hover:shadow-xl text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isSubmitting ? (

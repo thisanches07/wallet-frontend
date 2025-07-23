@@ -95,14 +95,13 @@ export default function ExpensesListModal({
 
   const getCategoryIcon = (categoria: string) => {
     const icons: Record<string, string> = {
-      alimentacao: "🍽️",
-      transporte: "🚗",
-      moradia: "🏠",
-      saude: "⚕️",
-      educacao: "📚",
-      lazer: "🎮",
-      compras: "🛒",
-      outros: "💸",
+      Alimentação: "🍽️",
+      Transporte: "🚗",
+      Aluguel: "🏠",
+      Saúde: "⚕️",
+      Educação: "📚",
+      Lazer: "🎮",
+      Outros: "💸",
     };
     return icons[categoria] || "💸";
   };
