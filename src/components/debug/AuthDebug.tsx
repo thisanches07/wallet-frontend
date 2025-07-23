@@ -1,5 +1,4 @@
 // src/components/debug/AuthDebug.tsx
-import { useCategories } from "@/context/CategoriesContext";
 import { useApi } from "@/hooks/useApi";
 import { useAuth } from "@/hooks/useAuth";
 import { authService } from "@/services/authService";
@@ -7,11 +6,6 @@ import { useState } from "react";
 
 export function AuthDebug() {
   const { user, token } = useAuth();
-  const {
-    categories,
-    loading: categoriesLoading,
-    error: categoriesError,
-  } = useCategories();
   const api = useApi();
   const [testResults, setTestResults] = useState<any[]>([]);
 
@@ -28,18 +22,6 @@ export function AuthDebug() {
       addTestResult("GET /api/users/me", { success: true, data: result });
     } catch (error) {
       addTestResult("GET /api/users/me", {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
-    }
-  };
-
-  const testCategoriesEndpoint = async () => {
-    try {
-      const result = await authService.apiCall("/api/categories");
-      addTestResult("GET /api/categories", result);
-    } catch (error) {
-      addTestResult("GET /api/categories", {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
       });
@@ -79,13 +61,6 @@ export function AuthDebug() {
         <div className="text-xs">
           <strong>Stored Token:</strong> {authService.getToken() ? "Yes" : "No"}
         </div>
-        <div className="text-xs">
-          <strong>Categories:</strong>{" "}
-          {categoriesLoading ? "Loading..." : `${categories.length} loaded`}
-          {categoriesError && (
-            <span className="text-red-500"> (Error: {categoriesError})</span>
-          )}
-        </div>
       </div>
 
       <div className="space-y-2 mb-4">
@@ -94,12 +69,6 @@ export function AuthDebug() {
           className="w-full text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
         >
           Test GET /api/users/me
-        </button>
-        <button
-          onClick={testCategoriesEndpoint}
-          className="w-full text-xs px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-        >
-          Test GET /api/categories
         </button>
         <button
           onClick={testDirectApiCall}

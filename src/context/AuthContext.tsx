@@ -75,18 +75,29 @@ const AuthContext = createContext<AuthContextProps>({} as AuthContextProps);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<any>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(() => {
+    // Inicializar com token salvo se existir
+    if (typeof window !== "undefined") {
+      return authService.getToken();
+    }
+    return null;
+  });
+  const [loading, setLoading] = useState(() => {
+    // Se já temos token salvo, não precisamos ficar em loading
+    if (typeof window !== "undefined") {
+      return !authService.getToken();
+    }
+    return true;
+  });
   const router = useRouter();
 
   useEffect(() => {
-    // Limpar qualquer token existente primeiro para evitar loops
+    // Inicializar imediatamente com token salvo se existir
     const savedToken = authService.getToken();
     if (savedToken) {
-      console.log(
-        "🔍 Token salvo encontrado, removendo para garantir estado limpo"
-      );
-      authService.removeToken();
+      console.log("✅ Inicializando com token salvo existente");
+      setToken(savedToken);
+      setLoading(false);
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -107,13 +118,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       try {
-        const idToken = await firebaseUser.getIdToken();
-        setUser(firebaseUser);
-        setToken(idToken);
-        authService.setToken(idToken);
+        // Verificar se já temos um token válido salvo para este usuário
+        const savedToken = authService.getToken();
+        let idToken: string;
 
-        // Sincronizar com backend após autenticação
-        await syncUserWithBackend(firebaseUser, idToken);
+        // Se não há token salvo, obter um novo
+        if (!savedToken) {
+          console.log("🔄 Obtendo novo token do Firebase...");
+          idToken = await firebaseUser.getIdToken();
+          authService.setToken(idToken);
+          setToken(idToken);
+        } else {
+          console.log("✅ Mantendo token salvo existente");
+          idToken = savedToken;
+          // Só atualizar se o token mudou
+          if (token !== savedToken) {
+            setToken(savedToken);
+          }
+        }
+
+        setUser(firebaseUser);
+
+        // Sincronizar com backend apenas se ainda não sincronizou
+        if (!user || user.uid !== firebaseUser.uid) {
+          await syncUserWithBackend(firebaseUser, idToken);
+        }
       } catch (error) {
         console.error("Erro ao obter token:", error);
         setUser(null);

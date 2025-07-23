@@ -10,17 +10,12 @@ type ApiExpense = {
   description: string;
   amount: number;
   date: string;
-  categoryId: number;
+  category: string; // Mudança: agora é string ao invés de categoryId
   user: {
     id: number;
     firebase_uuid: string;
     name: string;
     email: string;
-  };
-  category: {
-    id: number;
-    name: string;
-    type: string;
   };
 };
 
@@ -87,7 +82,7 @@ export function MonthlyExpenses() {
 
   const getCategoryIcon = (categoria: string): string => {
     const iconMap: Record<string, string> = {
-      Moradia: "🏠",
+      Aluguel: "🏠",
       Transporte: "🚗",
       Alimentação: "🍔",
       Lazer: "🎮",
@@ -100,7 +95,7 @@ export function MonthlyExpenses() {
 
   const getCategoryColor = (categoria: string): string => {
     const colorMap: Record<string, string> = {
-      Moradia: "bg-primary-100 text-primary-700 border-primary-200",
+      Aluguel: "bg-primary-100 text-primary-700 border-primary-200",
       Transporte: "bg-purple-100 text-purple-700 border-purple-200",
       Alimentação: "bg-success-100 text-success-700 border-success-200",
       Lazer: "bg-pink-100 text-pink-700 border-pink-200",
@@ -206,7 +201,7 @@ export function MonthlyExpenses() {
                       </span>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-neutral-900 text-sm truncate">
-                          {item.descricao}
+                          {item.description}
                         </h4>
                         <div className="flex items-center gap-2 mt-1">
                           <span
@@ -237,16 +232,33 @@ export function MonthlyExpenses() {
 
                       <button
                         onClick={() => handleDelete(item.id)}
-                        disabled={deletingId === item.id}
-                        className="p-1.5 hover:bg-danger-50 rounded-lg transition-colors group disabled:opacity-50"
-                        title="Excluir despesa"
+                        disabled={
+                          item.source !== "MANUAL" || deletingId === item.id
+                        }
+                        className={`
+    p-1.5 rounded-lg transition-colors group
+    ${
+      item.source !== "MANUAL"
+        ? "opacity-50 cursor-not-allowed"
+        : "hover:bg-danger-50"
+    }
+  `}
+                        title={
+                          item.source !== "MANUAL"
+                            ? "Despesa importada do Open Finance"
+                            : "Excluir despesa"
+                        }
                       >
                         {deletingId === item.id ? (
                           <div className="w-3 h-3 border border-danger-600 border-t-transparent rounded-full animate-spin" />
                         ) : (
                           <Trash2
                             size={14}
-                            className="text-neutral-400 group-hover:text-danger-600"
+                            className={`${
+                              item.source !== "MANUAL"
+                                ? "text-neutral-300"
+                                : "text-neutral-400 group-hover:text-danger-600"
+                            }`}
                           />
                         )}
                       </button>

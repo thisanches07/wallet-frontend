@@ -2,7 +2,7 @@ import { Calendar, DollarSign, RefreshCw, Tag, X } from "lucide-react";
 import { useState } from "react";
 
 interface RecurringExpenseData {
-  descricao: string;
+  description: string;
   categoria: string;
   valor: number;
   diaVencimento: number;
@@ -17,7 +17,7 @@ interface Props {
 
 export function AddRecurringExpenseModal({ onClose, onAdd }: Props) {
   const [form, setForm] = useState<RecurringExpenseData>({
-    descricao: "",
+    description: "",
     categoria: "",
     valor: 0,
     diaVencimento: 1,
@@ -27,7 +27,7 @@ export function AddRecurringExpenseModal({ onClose, onAdd }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (form.descricao && form.categoria && form.valor > 0) {
+    if (form.description && form.categoria && form.valor > 0) {
       onAdd(form);
       onClose();
     }
@@ -130,8 +130,10 @@ export function AddRecurringExpenseModal({ onClose, onAdd }: Props) {
               Descrição
             </label>
             <input
-              value={form.descricao}
-              onChange={(e) => setForm({ ...form, descricao: e.target.value })}
+              value={form.description}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
               placeholder="Ex: Aluguel, Netflix, Conta de Luz..."
               className="w-full px-4 py-3 border border-neutral-200 rounded-xl focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-all"
               required
@@ -200,12 +202,12 @@ export function AddRecurringExpenseModal({ onClose, onAdd }: Props) {
           </div>
 
           {/* Preview */}
-          {form.valor > 0 && form.descricao && (
+          {form.valor > 0 && form.description && (
             <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
               <h4 className="font-semibold text-orange-900 mb-2">Preview</h4>
               <div className="space-y-1">
                 <p className="text-sm text-orange-800">
-                  <span className="font-medium">{form.descricao}</span>
+                  <span className="font-medium">{form.description}</span>
                 </p>
                 <p className="text-sm text-orange-700">
                   {categorias.find((c) => c.value === form.categoria)?.icon}{" "}

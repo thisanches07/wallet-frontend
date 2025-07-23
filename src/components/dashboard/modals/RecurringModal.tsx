@@ -10,7 +10,7 @@ import { useState } from "react";
 
 interface RecurringExpense {
   id: string;
-  descricao: string;
+  description: string;
   categoria: string;
   valor: number;
   diaVencimento: number;
@@ -26,7 +26,7 @@ export function RecurringModal({ onClose }: Props) {
   const [expenses] = useState<RecurringExpense[]>([
     {
       id: "1",
-      descricao: "Aluguel",
+      description: "Aluguel",
       categoria: "Moradia",
       valor: 1200,
       diaVencimento: 5,
@@ -35,7 +35,7 @@ export function RecurringModal({ onClose }: Props) {
     },
     {
       id: "2",
-      descricao: "Internet",
+      description: "Internet",
       categoria: "Assinaturas",
       valor: 80,
       diaVencimento: 10,
@@ -44,7 +44,7 @@ export function RecurringModal({ onClose }: Props) {
     },
     {
       id: "3",
-      descricao: "Spotify",
+      description: "Spotify",
       categoria: "Assinaturas",
       valor: 16.9,
       diaVencimento: 15,
@@ -59,7 +59,7 @@ export function RecurringModal({ onClose }: Props) {
 
   const getCategoryIcon = (categoria: string) => {
     const icons: Record<string, string> = {
-      Moradia: "🏠",
+      Aluguel: "🏠",
       Transporte: "🚗",
       Alimentação: "🍽️",
       Saúde: "⚕️",
@@ -73,7 +73,7 @@ export function RecurringModal({ onClose }: Props) {
 
   const getCategoryColor = (categoria: string) => {
     const colors: Record<string, string> = {
-      Moradia: "bg-blue-100 text-blue-700 border-blue-200",
+      Aluguel: "bg-blue-100 text-blue-700 border-blue-200",
       Transporte: "bg-purple-100 text-purple-700 border-purple-200",
       Alimentação: "bg-green-100 text-green-700 border-green-200",
       Saúde: "bg-red-100 text-red-700 border-red-200",
@@ -175,7 +175,7 @@ export function RecurringModal({ onClose }: Props) {
                     </span>
                     <div>
                       <h4 className="font-medium text-gray-900">
-                        {expense.descricao}
+                        {expense.description}
                       </h4>
                       <div className="flex items-center gap-2 mt-1">
                         <span

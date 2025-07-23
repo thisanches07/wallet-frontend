@@ -1,5 +1,10 @@
 // src/context/CategoriesContext.tsx (Novo sistema sem API)
-import { ALL_CATEGORIES, EXPENSE_CATEGORIES, INCOME_CATEGORIES, CategorySuggestion } from "@/constants/categories";
+import {
+  ALL_CATEGORIES,
+  CategorySuggestion,
+  EXPENSE_CATEGORIES,
+  INCOME_CATEGORIES,
+} from "@/constants/categories";
 import React, { createContext, useContext } from "react";
 
 interface CategoriesContextProps {

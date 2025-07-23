@@ -21,9 +21,9 @@ export default function ExpensesListModal({
   const [animatingIds, setAnimatingIds] = useState<Set<number>>(new Set());
 
   // Filtrar despesas excluindo as que foram deletadas
-  const visibleExpenses = expenses.filter(
-    (expense) => !deletedIds.has(expense.id)
-  );
+  const visibleExpenses = expenses.filter((expense) => {
+    return !deletedIds.has(expense.id);
+  });
 
   // Resetar lista de deletados quando modal fechar
   const handleClose = () => {
@@ -95,18 +95,17 @@ export default function ExpensesListModal({
 
   const getCategoryIcon = (categoria: string) => {
     const icons: Record<string, string> = {
-      alimentacao: "🍽️",
-      transporte: "🚗",
-      moradia: "🏠",
-      saude: "⚕️",
-      educacao: "📚",
-      lazer: "🎮",
-      compras: "🛒",
-      outros: "💸",
+      Alimentação: "🍽️",
+      Transporte: "🚗",
+      Aluguel: "🏠",
+      Saúde: "⚕️",
+      Educação: "📚",
+      Lazer: "🎮",
+      Outros: "💸",
     };
     return icons[categoria] || "💸";
   };
-
+  console.log("Visible Expenses:", visibleExpenses);
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
@@ -165,7 +164,7 @@ export default function ExpensesListModal({
                       </div>
                       <div>
                         <h3 className="font-semibold text-neutral-900">
-                          {expense.descricao || "Despesa"}
+                          {expense.description || "Despesa"}
                         </h3>
                         <div className="flex items-center gap-4 mt-1">
                           {expense.data && (
@@ -207,16 +206,33 @@ export default function ExpensesListModal({
 
                     <button
                       onClick={() => handleDelete(expense.id)}
-                      disabled={deletingId === expense.id}
-                      className="p-2 hover:bg-danger-50 rounded-lg transition-colors group disabled:opacity-50"
-                      title="Excluir despesa"
+                      disabled={
+                        expense.source !== "MANUAL" || deletingId === expense.id
+                      }
+                      className={`
+    p-2 rounded-lg transition-colors group
+    ${
+      expense.source !== "MANUAL"
+        ? "opacity-50 cursor-not-allowed"
+        : "hover:bg-danger-50"
+    }
+  `}
+                      title={
+                        expense.source !== "MANUAL"
+                          ? "Despesa importada do Open Finance"
+                          : "Excluir despesa"
+                      }
                     >
                       {deletingId === expense.id ? (
                         <div className="w-4 h-4 border-2 border-danger-600 border-t-transparent rounded-full animate-spin" />
                       ) : (
                         <Trash2
                           size={16}
-                          className="text-neutral-400 group-hover:text-danger-600"
+                          className={`${
+                            expense.source !== "MANUAL"
+                              ? "text-neutral-300"
+                              : "text-neutral-400 group-hover:text-danger-600"
+                          }`}
                         />
                       )}
                     </button>
