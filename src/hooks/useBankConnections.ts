@@ -1,6 +1,9 @@
+// src/hooks/useBankConnections.ts
+
 import { PluggyAccount, PluggyConnection } from "@/services/pluggyService";
 import type { Item } from "pluggy-sdk";
 import { useCallback, useEffect, useState } from "react";
+import { useApi } from "./useApi";
 import { PluggyItem, usePluggyItems } from "./usePluggyItems";
 
 export interface ConnectedBank {
@@ -29,41 +32,17 @@ export function useBankConnections() {
   >(null);
 
   const { removePluggyItem, getPluggyItems } = usePluggyItems();
+  const api = useApi();
 
-  const mapPluggyConnectionToBank = useCallback(
-    (
-      connection: PluggyConnection,
-      accounts?: PluggyAccount[]
-    ): ConnectedBank => {
-      let status: ConnectedBank["status"] = "connected";
-
-      switch (connection.status) {
-        case "UPDATED":
-          status = "connected";
-          break;
-        case "UPDATING":
-        case "MERGING":
-          status = "syncing";
-          break;
-        case "WAITING_USER_INPUT":
-          status = "waiting_input";
-          break;
-        case "ERROR":
-          status = "error";
-          break;
-      }
-
+  const mapPluggyItemToBank = useCallback(
+    (pluggyItem: PluggyItem): ConnectedBank => {
       return {
-        id: connection.id,
-        name: connection.connector.name,
-        status,
-        lastSync: connection.lastUpdatedAt
-          ? new Date(connection.lastUpdatedAt)
-          : undefined,
-        imageUrl: connection.connector.imageUrl,
-        primaryColor: connection.connector.primaryColor,
-        accounts,
-        connection,
+        id: pluggyItem.itemId,
+        name: pluggyItem.institution,
+        status: "connected",
+        lastSync: new Date(pluggyItem.connectedAt),
+        imageUrl: pluggyItem.imageUrl,
+        primaryColor: undefined,
       };
     },
     []
@@ -81,40 +60,21 @@ export function useBankConnections() {
     };
   }, []);
 
-  const mapPluggyItemToBank = useCallback(
-    (pluggyItem: PluggyItem): ConnectedBank => {
-      return {
-        id: pluggyItem.itemId,
-        name: pluggyItem.institution,
-        status: "connected",
-        lastSync: new Date(pluggyItem.connectedAt),
-        imageUrl: pluggyItem.imageUrl, // Agora vem da API backend
-        primaryColor: undefined, // API não retorna primaryColor ainda
-      };
-    },
-    []
-  );
-
   const loadConnections = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
       console.log("📡 Carregando bancos conectados da API...");
-
-      // Buscar itens Pluggy conectados da API
       const pluggyItems = await getPluggyItems();
       console.log("✅ Itens carregados:", pluggyItems);
 
-      // Mapear para ConnectedBank
       const banks = pluggyItems.map(mapPluggyItemToBank);
       setConnectedBanks(banks);
-
       console.log("✅ Bancos conectados carregados:", banks.length);
     } catch (err) {
       console.error("❌ Erro ao carregar conexões:", err);
       setError("Erro ao carregar conexões bancárias");
-      // Em caso de erro, manter lista vazia
       setConnectedBanks([]);
     } finally {
       setLoading(false);
@@ -126,10 +86,7 @@ export function useBankConnections() {
       console.log("✅ Conexão bem-sucedida:", itemData);
 
       try {
-        // Recarregar a lista de bancos da API para garantir sincronização
-        console.log("🔄 Recarregando lista de bancos...");
         await loadConnections();
-
         const newBank = mapItemToBank(itemData.item);
 
         if (pendingResolve) {
@@ -139,7 +96,6 @@ export function useBankConnections() {
       } catch (error) {
         console.error("❌ Erro ao recarregar lista:", error);
 
-        // Fallback: adicionar localmente se falhar o reload
         const newBank = mapItemToBank(itemData.item);
         setConnectedBanks((prev) => [...prev, newBank]);
 
@@ -173,9 +129,8 @@ export function useBankConnections() {
   const handlePluggyClose = useCallback(() => {
     console.log("🚪 Widget fechado pelo usuário");
 
-    // Em vez de rejeitar, resolve com null para indicar cancelamento
     if (pendingResolve) {
-      pendingResolve(null); // Resolve com null para indicar cancelamento
+      pendingResolve(null);
       setPendingResolve(null);
     }
     if (pendingReject) {
@@ -188,20 +143,14 @@ export function useBankConnections() {
 
   const connectBank = useCallback(async (): Promise<ConnectedBank | null> => {
     try {
-      // URL base do seu backend
       const BACKEND_URL =
         process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
       console.log("🔄 Iniciando processo de conexão bancária...");
-      console.log("📡 Backend URL:", BACKEND_URL);
-
-      // 1. Obter token de conexão através do seu backend
       const tokenRes = await fetch(`${BACKEND_URL}/api/pluggy/connect-token`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // Adicione headers de autenticação se necessário
-          // "Authorization": `Bearer ${token}`
         },
       });
 
@@ -210,20 +159,11 @@ export function useBankConnections() {
       }
 
       const tokenData = await tokenRes.json();
-      console.log("🔑 Token recebido:", tokenData);
-
       const accessToken = tokenData.data.accessToken;
-      console.log(
-        "✅ Access Token:",
-        accessToken ? "Recebido" : "ERRO - Token vazio"
-      );
 
       if (!accessToken) {
         throw new Error("Token de acesso não recebido do backend");
       }
-
-      // 2. Configurar o widget Pluggy
-      console.log("🚀 Abrindo Pluggy Connect Widget...");
 
       return new Promise<ConnectedBank | null>((resolve, reject) => {
         setPendingResolve(() => resolve);
@@ -241,13 +181,9 @@ export function useBankConnections() {
     async (bankId: string) => {
       try {
         console.log("🗑️ Desvinculando banco:", bankId);
-
-        // Chamar API backend para remover o item Pluggy
         await removePluggyItem(bankId);
         console.log("✅ Item removido do backend com sucesso");
 
-        // Recarregar lista da API para garantir sincronização
-        console.log("🔄 Recarregando lista de bancos...");
         await loadConnections();
         console.log("✅ Lista recarregada após desconexão");
       } catch (error) {
@@ -258,34 +194,36 @@ export function useBankConnections() {
     [removePluggyItem, loadConnections]
   );
 
-  const syncBank = useCallback(async (bankId: string) => {
-    try {
-      setConnectedBanks((prev) =>
-        prev.map((bank) =>
-          bank.id === bankId ? { ...bank, status: "syncing" } : bank
-        )
-      );
+  const syncBank = useCallback(
+    async (bankId: string) => {
+      try {
+        setConnectedBanks((prev) =>
+          prev.map((bank) =>
+            bank.id === bankId ? { ...bank, status: "syncing" } : bank
+          )
+        );
 
-      // Simular sincronização
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+        await api.syncPluggyItem(bankId);
 
-      setConnectedBanks((prev) =>
-        prev.map((bank) =>
-          bank.id === bankId
-            ? { ...bank, status: "connected", lastSync: new Date() }
-            : bank
-        )
-      );
-    } catch (error) {
-      console.error("Erro ao sincronizar banco:", error);
-      setConnectedBanks((prev) =>
-        prev.map((bank) =>
-          bank.id === bankId ? { ...bank, status: "error" } : bank
-        )
-      );
-      throw error;
-    }
-  }, []);
+        setConnectedBanks((prev) =>
+          prev.map((bank) =>
+            bank.id === bankId
+              ? { ...bank, status: "connected", lastSync: new Date() }
+              : bank
+          )
+        );
+      } catch (error) {
+        console.error("Erro ao sincronizar banco:", error);
+        setConnectedBanks((prev) =>
+          prev.map((bank) =>
+            bank.id === bankId ? { ...bank, status: "error" } : bank
+          )
+        );
+        throw error;
+      }
+    },
+    [api]
+  );
 
   useEffect(() => {
     loadConnections();
@@ -299,7 +237,6 @@ export function useBankConnections() {
     disconnectBank,
     syncBank,
     refreshConnections: loadConnections,
-    // Estados do widget
     showPluggyWidget,
     connectToken,
     handlePluggySuccess,

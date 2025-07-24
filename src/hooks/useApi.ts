@@ -258,6 +258,11 @@ export function useApi() {
           body: JSON.stringify(data),
         }),
 
+      syncPluggyItem: (itemId: string) =>
+        apiCall(`/api/pluggy-items/${itemId}/transactions`, {
+          method: "GET",
+        }),
+
       getIncomeAllocation: () => apiCall("/api/users/income-allocation"),
 
       updateIncomeAllocation: (data: {
