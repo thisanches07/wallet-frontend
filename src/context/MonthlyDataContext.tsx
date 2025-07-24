@@ -28,6 +28,7 @@ interface MonthlyDataState {
   incomes: IncomeData[];
   loading: boolean;
   error: string | null;
+  isOffline: boolean;
 }
 
 interface MonthlyDataContextType {
@@ -87,6 +88,7 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
           incomes: [],
           loading: true,
           error: null,
+          isOffline: false,
         }
       );
     },
@@ -167,6 +169,7 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
           incomes,
           loading: false,
           error: null,
+          isOffline: false,
         },
       }));
     } catch (error) {
@@ -208,6 +211,7 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
           incomes: [],
           loading: true,
           error: null,
+          isOffline: false,
         },
       }));
 
@@ -225,11 +229,14 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
             incomes,
             loading: false,
             error: null,
+            isOffline: false,
           },
         }));
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Erro ao carregar dados";
+        const isOfflineError = errorMessage.includes("OFFLINE");
+
         setData((prev) => ({
           ...prev,
           [key]: {
@@ -237,6 +244,7 @@ export function MonthlyDataProvider({ children }: MonthlyDataProviderProps) {
             incomes: [],
             loading: false,
             error: errorMessage,
+            isOffline: isOfflineError,
           },
         }));
         console.error(

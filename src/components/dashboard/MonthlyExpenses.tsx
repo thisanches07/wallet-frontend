@@ -121,25 +121,27 @@ export function MonthlyExpenses() {
         showAll ? "max-h-[calc(100vh-200px)]" : "h-fit"
       }`}
     >
-      <div className="bg-gradient-to-r from-primary-600 via-primary-700 to-indigo-600 rounded-t-2xl p-6 text-white flex-shrink-0">
+      <div className="bg-gradient-to-r from-primary-600 via-primary-700 to-indigo-600 rounded-t-2xl p-4 lg:p-6 text-white flex-shrink-0">
         <div className="flex items-center gap-3 mb-4">
-          <div className="flex items-center justify-center w-12 h-12 bg-white/20 rounded-xl backdrop-blur-sm">
-            <Receipt className="w-6 h-6 text-white" />
+          <div className="flex items-center justify-center w-10 h-10 lg:w-12 lg:h-12 bg-white/20 rounded-xl backdrop-blur-sm">
+            <Receipt className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
           </div>
-          <div className="flex-1">
-            <h2 className="text-xl font-bold text-white">💳 Gastos Mensais</h2>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg lg:text-xl font-bold text-white">
+              💳 Gastos Mensais
+            </h2>
             <p className="text-primary-100 text-sm">
               {expenses.length} transações este mês
             </p>
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="min-w-0">
             <p className="text-primary-100 text-sm font-medium mb-1">
               Total gasto no mês
             </p>
-            <p className="text-2xl font-bold text-white">
+            <p className="text-xl lg:text-2xl font-bold text-white break-words">
               R${" "}
               {totalExpenses.toLocaleString("pt-BR", {
                 minimumFractionDigits: 2,
@@ -148,15 +150,22 @@ export function MonthlyExpenses() {
           </div>
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-medium px-4 py-3 rounded-xl transition-all duration-200 hover:scale-105 shadow-lg"
+            className="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-medium px-3 py-2 lg:px-4 lg:py-3 rounded-xl transition-all duration-200 hover:scale-105 shadow-lg whitespace-nowrap"
           >
-            <Plus className="w-5 h-5" />
-            <span>Adicionar Gasto</span>
+            <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
+            <span className="text-sm lg:text-base">
+              <span className="hidden sm:inline">Adicionar Gasto</span>
+              <span className="sm:hidden">Adicionar</span>
+            </span>
           </button>
         </div>
       </div>
 
-      <div className={`p-4 ${showAll ? "flex-1 overflow-y-auto min-h-0" : ""}`}>
+      <div
+        className={`p-3 lg:p-4 ${
+          showAll ? "flex-1 overflow-y-auto min-h-0" : ""
+        }`}
+      >
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
@@ -193,9 +202,9 @@ export function MonthlyExpenses() {
                   } animate-fade-in`}
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <span className="text-sm">
+                      <span className="text-sm flex-shrink-0">
                         {getCategoryIcon(item.category)}
                       </span>
                       <div className="flex-1 min-w-0">
@@ -208,7 +217,12 @@ export function MonthlyExpenses() {
                               item.category
                             )}`}
                           >
-                            {item.category}
+                            <span className="hidden sm:inline">
+                              {item.category}
+                            </span>
+                            <span className="sm:hidden">
+                              {item.category.slice(0, 3)}
+                            </span>
                           </span>
                         </div>
                       </div>

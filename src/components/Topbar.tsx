@@ -70,10 +70,10 @@ const useUserProfile = (firebaseUser: any) => {
       try {
         // Criar uma chave única baseada no UID do usuário
         const userKey = `userProfile_${firebaseUser.uid}`;
-        
+
         // Limpar cache de outros usuários
-        Object.keys(localStorage).forEach(key => {
-          if (key.startsWith('userProfile_') && key !== userKey) {
+        Object.keys(localStorage).forEach((key) => {
+          if (key.startsWith("userProfile_") && key !== userKey) {
             localStorage.removeItem(key);
           }
         });
@@ -154,12 +154,17 @@ export function Topbar() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState(3);
+  const [mounted, setMounted] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   // Usar o hook personalizado para dados do usuário
   const userInfo = useUserProfile(user);
 
   // SEMPRE chamar useEffect primeiro, antes de qualquer return condicional
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -183,8 +188,8 @@ export function Topbar() {
     }
   };
 
-  // Se não há usuário autenticado, não renderizar o componente
-  if (!user || !userInfo) {
+  // Se não há usuário autenticado ou não está montado, não renderizar o componente
+  if (!mounted || !user || !userInfo) {
     return null;
   }
 
@@ -202,15 +207,15 @@ export function Topbar() {
   };
 
   return (
-    <header className="w-full bg-white/95 backdrop-blur-lg border-b border-neutral-200/60 px-4 lg:px-6 py-3 flex justify-between items-center sticky top-0 z-50 shadow-sm">
+    <header className="w-full bg-white/95 backdrop-blur-lg border-b border-neutral-200/60 px-3 sm:px-4 lg:px-6 py-3 flex justify-between items-center sticky top-0 z-50 shadow-sm">
       {/* Logo e Brand com Status de Segurança */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex items-center justify-center w-11 h-11 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group">
-          <Wallet className="w-6 h-6 text-white group-hover:scale-110 transition-transform duration-200" />
+      <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+        <div className="relative flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group flex-shrink-0">
+          <Wallet className="w-5 h-5 sm:w-6 sm:h-6 text-white group-hover:scale-110 transition-transform duration-200" />
         </div>
-        <div className="hidden sm:block">
+        <div className="hidden sm:block min-w-0">
           <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold text-neutral-900 tracking-tight">
+            <h1 className="text-lg lg:text-xl font-bold text-neutral-900 tracking-tight truncate">
               Carteira IA
             </h1>
           </div>
@@ -243,21 +248,20 @@ export function Topbar() {
       </nav>
 
       {/* Seção do Usuário */}
-      <div className="flex items-center gap-3">
-        {/* Busca - Desktop */}
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         {/* Menu do Usuário */}
         <div className="relative" ref={userMenuRef}>
           <button
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-            className="flex items-center gap-3 p-2 hover:bg-neutral-50 rounded-xl transition-all duration-200 group border border-transparent hover:border-neutral-200"
+            className="flex items-center gap-2 sm:gap-3 p-2 hover:bg-neutral-50 rounded-xl transition-all duration-200 group border border-transparent hover:border-neutral-200 min-w-0"
           >
             {/* Avatar */}
-            <div className="relative">
+            <div className="relative flex-shrink-0">
               {userInfo.avatar ? (
                 <img
                   src={userInfo.avatar}
                   alt={userInfo.name}
-                  className="w-9 h-9 rounded-full object-cover ring-2 ring-neutral-200 group-hover:ring-blue-300 transition-all duration-200"
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover ring-2 ring-neutral-200 group-hover:ring-blue-300 transition-all duration-200"
                   onError={(e) => {
                     // Fallback caso a imagem do Google falhe
                     e.currentTarget.style.display = "none";
@@ -268,20 +272,20 @@ export function Topbar() {
                 />
               ) : null}
               <div
-                className={`w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center ${
+                className={`w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center ${
                   userInfo.avatar ? "hidden" : ""
                 }`}
               >
-                <span className="text-white font-semibold text-sm">
+                <span className="text-white font-semibold text-xs sm:text-sm">
                   {getUserInitials(userInfo.name)}
                 </span>
               </div>
               {/* Status online */}
-              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></div>
+              <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-emerald-500 border-2 border-white rounded-full"></div>
             </div>
 
             {/* Info do Usuário - Desktop */}
-            <div className="hidden lg:block text-left">
+            <div className="hidden lg:block text-left min-w-0">
               <p className="text-sm font-semibold text-neutral-900 truncate max-w-[120px]">
                 {userInfo.name}
               </p>
@@ -297,7 +301,7 @@ export function Topbar() {
             </div>
 
             <ChevronDown
-              className={`w-4 h-4 text-neutral-500 transition-transform duration-200 ${
+              className={`w-3 h-3 sm:w-4 sm:h-4 text-neutral-500 transition-transform duration-200 hidden sm:block ${
                 isUserMenuOpen ? "rotate-180" : ""
               }`}
             />
@@ -305,7 +309,7 @@ export function Topbar() {
 
           {/* Dropdown Menu */}
           {isUserMenuOpen && (
-            <div className="absolute right-0 mt-2 w-72 bg-white border border-neutral-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-in slide-in-from-top-2 duration-200">
+            <div className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-16px)] bg-white border border-neutral-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-in slide-in-from-top-2 duration-200">
               {/* Header do Menu */}
               <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-neutral-200">
                 <div className="flex items-center gap-3">
@@ -313,7 +317,7 @@ export function Topbar() {
                     <img
                       src={userInfo.avatar}
                       alt={userInfo.name}
-                      className="w-12 h-12 rounded-full object-cover ring-2 ring-white shadow-sm"
+                      className="w-12 h-12 rounded-full object-cover ring-2 ring-white shadow-sm flex-shrink-0"
                       onError={(e) => {
                         // Fallback caso a imagem do Google falhe
                         e.currentTarget.style.display = "none";
@@ -324,7 +328,7 @@ export function Topbar() {
                     />
                   ) : null}
                   <div
-                    className={`w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center ring-2 ring-white shadow-sm ${
+                    className={`w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center ring-2 ring-white shadow-sm flex-shrink-0 ${
                       userInfo.avatar ? "hidden" : ""
                     }`}
                   >

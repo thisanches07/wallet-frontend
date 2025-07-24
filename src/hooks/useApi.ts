@@ -19,16 +19,16 @@ export function useApi() {
 
       const response = await authService.apiCall<T>(endpoint, options);
 
-      // Se retornar erro de autenticação, fazer logout automático
+      // Se retornar erro de autenticação, indicar que está offline
       if (
         !response.success &&
         (response.error?.includes("Unauthorized") ||
           response.error?.includes("Token ausente") ||
-          response.error?.includes("não autenticado"))
+          response.error?.includes("não autenticado") ||
+          response.error?.includes("Token inválido"))
       ) {
-        console.log("🔐 Sessão inválida detectada, fazendo logout...");
-        logout();
-        return null;
+        console.log("🔐 Sessão inválida detectada - modo offline");
+        throw new Error("OFFLINE: Sem conexão com o servidor");
       }
 
       if (!response.success) {

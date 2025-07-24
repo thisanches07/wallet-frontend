@@ -1,3 +1,4 @@
+import { ClientOnly } from "@/components/ClientOnly";
 import SummaryCards from "@/components/dashboard/cards/SummaryCards";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { ExpensesBarChart } from "@/components/dashboard/ExpensesBarChart";
@@ -5,6 +6,7 @@ import { ExpensesComparison } from "@/components/dashboard/ExpensesComparison";
 import { MonthlyExpenses } from "@/components/dashboard/MonthlyExpenses";
 import { MonthlyPlanningCard } from "@/components/dashboard/MonthlyPlanningCard";
 import { MonthSidebar } from "@/components/dashboard/MonthSidebar";
+import MonthSelectorMobile from "@/components/dashboard/MonthSidebarMobile";
 import { NotificationCenter } from "@/components/dashboard/NotificationCenter";
 import { Topbar } from "@/components/Topbar";
 import { MonthlyDataProvider } from "@/context/MonthlyDataContext";
@@ -20,13 +22,21 @@ import { useEffect, useState } from "react";
 
 export default function DashboardPage() {
   return (
-    <SelectedMonthProvider>
-      <SummaryProvider>
-        <MonthlyDataProvider>
-          <DashboardContent />
-        </MonthlyDataProvider>
-      </SummaryProvider>
-    </SelectedMonthProvider>
+    <ClientOnly
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-50 to-neutral-100">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      }
+    >
+      <SelectedMonthProvider>
+        <SummaryProvider>
+          <MonthlyDataProvider>
+            <DashboardContent />
+          </MonthlyDataProvider>
+        </SummaryProvider>
+      </SelectedMonthProvider>
+    </ClientOnly>
   );
 }
 
@@ -79,8 +89,8 @@ function DashboardContent() {
         <div className="flex flex-col items-center gap-6 p-8">
           {/* Loading spinner melhorado */}
           <div className="relative">
-            <div className="w-12 h-12 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
-            <div className="absolute inset-0 w-12 h-12 border-4 border-transparent border-b-primary-400 rounded-full animate-ping"></div>
+            <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+            <div className="absolute inset-0 w-12 h-12 border-4 border-transparent border-b-blue-400 rounded-full animate-ping"></div>
           </div>
           <div className="text-center">
             <p className="text-lg font-semibold text-neutral-800 mb-2">
@@ -98,17 +108,50 @@ function DashboardContent() {
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-neutral-50 via-white to-neutral-100">
       <Topbar />
 
-      <div className="flex flex-1">
-        <MonthSidebar selected={selectedMonth} onSelect={setSelectedMonth} />
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar - Hidden on mobile, shown on larger screens */}
+        <div className="hidden lg:block">
+          <MonthSidebar selected={selectedMonth} onSelect={setSelectedMonth} />
+          <MonthSelectorMobile
+            selected={selectedMonth}
+            onSelect={setSelectedMonth}
+          />
+        </div>
 
-        <main className="flex-1 p-3 lg:p-6 overflow-hidden">
+        <main className="flex-1 p-3 lg:p-6 overflow-y-auto">
           <div className="max-w-8xl mx-auto h-full flex flex-col">
             <DashboardHeader selectedMonth={monthAbbr[selectedMonth]} />
+
+            {/* Mobile Month Selector - Only shown on mobile */}
+            <div className="lg:hidden mb-4">
+              <div className="bg-white rounded-xl border border-neutral-200 p-4">
+                <h3 className="text-sm font-semibold text-neutral-700 mb-3">
+                  Selecionar Mês
+                </h3>
+                <div className="grid grid-cols-6 gap-2">
+                  {monthAbbr
+                    .slice(0, new Date().getMonth() + 1)
+                    .map((month, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setSelectedMonth(index)}
+                        className={`p-2 rounded-lg text-xs font-medium transition-all ${
+                          selectedMonth === index
+                            ? "bg-blue-500 text-white"
+                            : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                        }`}
+                      >
+                        {month}
+                      </button>
+                    ))}
+                </div>
+              </div>
+            </div>
 
             {/* Layout principal responsivo */}
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 flex-1 min-h-0">
               {/* Área principal de conteúdo */}
-              <div className="xl:col-span-9 space-y-6 overflow-y-auto pr-2">
+              <div className="xl:col-span-9 space-y-4 lg:space-y-6 overflow-y-auto pr-0 xl:pr-2">
                 {/* Cards de resumo */}
                 <div className="animate-slide-in">
                   <SummaryCards />
@@ -121,10 +164,10 @@ function DashboardContent() {
 
                 {/* Gráficos principais */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-slide-in [animation-delay:100ms]">
-                  <div>
+                  <div className="min-w-0">
                     <ExpensesBarChart />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <ExpensesComparison />
                   </div>
                 </div>
@@ -166,7 +209,7 @@ function DashboardContent() {
 
               {/* Sidebar direita */}
               <div className="xl:col-span-3 flex justify-center overflow-y-auto animate-slide-in [animation-delay:300ms]">
-                <div className="w-full max-w-sm space-y-4 sticky top-6">
+                <div className="w-full max-w-sm space-y-4 xl:sticky xl:top-6">
                   <MonthlyPlanningCard />
                 </div>
               </div>

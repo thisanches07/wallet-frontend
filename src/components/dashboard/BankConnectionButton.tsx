@@ -20,11 +20,16 @@ interface BankConnectionButtonProps {
 export function BankConnectionButton({ onConnect }: BankConnectionButtonProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({
     top: 0,
     right: 0,
   });
   const buttonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const {
     connectedBanks,
@@ -40,14 +45,14 @@ export function BankConnectionButton({ onConnect }: BankConnectionButtonProps) {
   } = useBankConnections();
 
   useEffect(() => {
-    if (showDropdown && buttonRef.current) {
+    if (mounted && showDropdown && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       setDropdownPosition({
         top: rect.bottom + window.scrollY + 8,
         right: window.innerWidth - rect.right - window.scrollX,
       });
     }
-  }, [showDropdown]);
+  }, [mounted, showDropdown]);
 
   const handleConnect = useCallback(async () => {
     try {
@@ -134,16 +139,16 @@ export function BankConnectionButton({ onConnect }: BankConnectionButtonProps) {
       <button
         ref={buttonRef}
         onClick={() => setShowDropdown(!showDropdown)}
-        className="group relative flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-green-600 via-green-700 to-emerald-600 hover:from-green-700 hover:via-green-800 hover:to-emerald-700 text-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.02] min-w-[160px]"
+        className="group relative flex items-center gap-2 lg:gap-3 px-3 py-2 lg:px-5 lg:py-3 bg-gradient-to-r from-green-600 via-green-700 to-emerald-600 hover:from-green-700 hover:via-green-800 hover:to-emerald-700 text-white rounded-xl lg:rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.02] min-w-0 sm:min-w-[120px] lg:min-w-[160px]"
       >
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 translate-x-[-150%] group-hover:translate-x-[150%] transition-transform duration-1000 ease-out"></div>
-        <CreditCard className="w-5 h-5 relative z-10 group-hover:scale-110 transition-transform duration-300" />
-        <div className="flex flex-col items-start relative z-10">
-          <span className="font-bold text-sm tracking-tight">
+        <CreditCard className="w-4 h-4 lg:w-5 lg:h-5 relative z-10 group-hover:scale-110 transition-transform duration-300 flex-shrink-0" />
+        <div className="flex flex-col items-start relative z-10 min-w-0">
+          <span className="font-bold text-xs lg:text-sm tracking-tight truncate">
             {connectedBanks.length > 0 ? "Bancos" : "Conectar Banco"}
           </span>
           {connectedBanks.length > 0 && (
-            <span className="text-xs text-green-100">
+            <span className="text-xs text-green-100 hidden sm:block">
               {connectedBanks.length} conectado
               {connectedBanks.length > 1 ? "s" : ""}
             </span>
@@ -151,37 +156,37 @@ export function BankConnectionButton({ onConnect }: BankConnectionButtonProps) {
         </div>
         {connectedBanks.length > 0 && (
           <div className="flex items-center gap-1 relative z-10">
-            {connectedBanks.slice(0, 3).map((bank) => (
+            {connectedBanks.slice(0, 2).map((bank) => (
               <div key={bank.id} className="relative">
                 {getStatusIcon(bank.status)}
               </div>
             ))}
-            {connectedBanks.length > 3 && (
-              <span className="text-xs text-green-100 ml-1">
-                +{connectedBanks.length - 3}
+            {connectedBanks.length > 2 && (
+              <span className="text-xs text-green-100 ml-1 hidden lg:inline">
+                +{connectedBanks.length - 2}
               </span>
             )}
           </div>
         )}
       </button>
 
-      {showDropdown && (
+      {mounted && showDropdown && (
         <>
           <div
             className="fixed inset-0 z-[99998]"
             onClick={() => setShowDropdown(false)}
           />
           <div
-            className="fixed w-80 bg-white rounded-2xl shadow-2xl border border-neutral-200/80 backdrop-blur-sm z-[99999] overflow-hidden transition-all duration-200 ease-out"
+            className="fixed w-80 max-w-[calc(100vw-16px)] bg-white rounded-2xl shadow-2xl border border-neutral-200/80 backdrop-blur-sm z-[99999] overflow-hidden transition-all duration-200 ease-out"
             style={{
               top: `${dropdownPosition.top}px`,
-              right: `${dropdownPosition.right}px`,
+              right: `${Math.max(8, dropdownPosition.right)}px`,
             }}
           >
             <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 border-b border-green-100">
               <h3 className="font-bold text-green-900 flex items-center gap-2">
                 <CreditCard className="w-5 h-5" />
-                Conexões Bancárias
+                <span className="truncate">Conexões Bancárias</span>
               </h3>
               <p className="text-sm text-green-700 mt-1">
                 Gerencie suas conexões com instituições financeiras
@@ -198,8 +203,8 @@ export function BankConnectionButton({ onConnect }: BankConnectionButtonProps) {
                     key={bank.id}
                     className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl hover:bg-neutral-100 transition-colors group"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0">
                         {bank.imageUrl ? (
                           <img
                             src={bank.imageUrl}
@@ -210,22 +215,22 @@ export function BankConnectionButton({ onConnect }: BankConnectionButtonProps) {
                           <CreditCard className="w-6 h-6 text-neutral-600" />
                         )}
                       </div>
-                      <div>
-                        <p className="font-medium text-neutral-800 text-sm">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-neutral-800 text-sm truncate">
                           {bank.name}
                         </p>
                         <div className="flex items-center gap-2">
                           {getStatusIcon(bank.status)}
-                          <span className="text-xs text-neutral-600">
+                          <span className="text-xs text-neutral-600 truncate">
                             {getStatusText(bank.status)}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       {bank.lastSync && (
-                        <span className="text-xs text-neutral-500">
+                        <span className="text-xs text-neutral-500 hidden sm:block">
                           {bank.lastSync.toLocaleDateString("pt-BR")}
                         </span>
                       )}
@@ -266,12 +271,12 @@ export function BankConnectionButton({ onConnect }: BankConnectionButtonProps) {
                 {isConnecting ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Conectando...
+                    <span className="truncate">Conectando...</span>
                   </>
                 ) : (
                   <>
                     <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                    Conectar Novo Banco
+                    <span className="truncate">Conectar Novo Banco</span>
                   </>
                 )}
               </button>
@@ -283,8 +288,8 @@ export function BankConnectionButton({ onConnect }: BankConnectionButtonProps) {
 
             <div className="bg-blue-50 p-4 border-t border-blue-100">
               <div className="flex items-start gap-3">
-                <Link className="w-5 h-5 text-blue-600 mt-0.5" />
-                <div>
+                <Link className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="min-w-0">
                   <h5 className="font-semibold text-blue-900 text-sm">
                     Tecnologia Pluggy
                   </h5>
@@ -299,7 +304,7 @@ export function BankConnectionButton({ onConnect }: BankConnectionButtonProps) {
         </>
       )}
 
-      {showPluggyWidget && connectToken && (
+      {mounted && showPluggyWidget && connectToken && (
         <PluggyWidget
           connectToken={connectToken}
           onSuccess={handlePluggySuccess}
