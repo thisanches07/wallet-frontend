@@ -5,13 +5,13 @@ import {
   LogOut,
   Menu,
   PieChart,
-  Settings,
   TrendingUp,
   User,
   Wallet,
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
 
 interface UserInfo {
@@ -151,6 +151,7 @@ const useUserProfile = (firebaseUser: any) => {
 
 export function Topbar() {
   const { user, logout } = useAuth();
+  const router = useRouter();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState(3);
@@ -159,6 +160,35 @@ export function Topbar() {
 
   // Usar o hook personalizado para dados do usuário
   const userInfo = useUserProfile(user);
+
+  // Função para verificar se a rota está ativa
+  const isActiveRoute = (path: string) => {
+    return router.pathname === path;
+  };
+
+  // Função para obter classes do link baseado no estado ativo
+  const getLinkClasses = (path: string) => {
+    const baseClasses =
+      "flex items-center gap-2 text-sm font-medium transition-all duration-200 group px-4 py-2.5 rounded-xl";
+
+    if (isActiveRoute(path)) {
+      return `${baseClasses} text-blue-700 bg-blue-50 border border-blue-200 font-semibold`;
+    }
+
+    return `${baseClasses} text-neutral-700 hover:text-blue-600 hover:bg-blue-50`;
+  };
+
+  // Função para obter classes do menu mobile
+  const getMobileLinkClasses = (path: string) => {
+    const baseClasses =
+      "flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors rounded-xl";
+
+    if (isActiveRoute(path)) {
+      return `${baseClasses} text-blue-700 bg-blue-50 font-semibold`;
+    }
+
+    return `${baseClasses} text-neutral-700 hover:bg-neutral-50`;
+  };
 
   // SEMPRE chamar useEffect primeiro, antes de qualquer return condicional
   useEffect(() => {
@@ -226,21 +256,24 @@ export function Topbar() {
       <nav className="hidden lg:flex items-center space-x-2">
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 text-sm font-semibold text-blue-700 bg-blue-50 border border-blue-200 transition-all duration-200 group px-4 py-2.5 rounded-xl hover:bg-blue-100"
+          className={getLinkClasses("/dashboard")}
+          prefetch={true}
         >
           <TrendingUp className="w-4 h-4 group-hover:scale-110 transition-transform" />
           <span>Dashboard</span>
         </Link>
         <Link
           href="/investments"
-          className="flex items-center gap-2 text-sm font-medium text-neutral-700 hover:text-blue-600 transition-all duration-200 group px-4 py-2.5 rounded-xl hover:bg-blue-50"
+          className={getLinkClasses("/investments")}
+          prefetch={true}
         >
           <PieChart className="w-4 h-4 group-hover:scale-110 transition-transform" />
           <span>Investimentos</span>
         </Link>
         <Link
           href="/carteira"
-          className="flex items-center gap-2 text-sm font-medium text-neutral-700 hover:text-blue-600 transition-all duration-200 group px-4 py-2.5 rounded-xl hover:bg-blue-50"
+          className={getLinkClasses("/carteira")}
+          prefetch={true}
         >
           <Wallet className="w-4 h-4 group-hover:scale-110 transition-transform" />
           <span>Carteira</span>
@@ -366,10 +399,6 @@ export function Topbar() {
                   <User className="w-4 h-4" />
                   <span>Meu Perfil</span>
                 </Link>
-                <button className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 rounded-xl transition-colors duration-200">
-                  <Settings className="w-4 h-4" />
-                  <span>Configurações</span>
-                </button>
                 <div className="h-px bg-neutral-200 my-2 mx-3"></div>
                 <button
                   onClick={handleLogout}
@@ -402,32 +431,36 @@ export function Topbar() {
           <nav className="p-4 space-y-2">
             <Link
               href="/dashboard"
-              className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-blue-700 bg-blue-50 rounded-xl"
+              className={getMobileLinkClasses("/dashboard")}
               onClick={() => setIsMobileMenuOpen(false)}
+              prefetch={true}
             >
               <TrendingUp className="w-5 h-5" />
               <span>Dashboard</span>
             </Link>
             <Link
               href="/profile"
-              className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 rounded-xl transition-colors"
+              className={getMobileLinkClasses("/profile")}
               onClick={() => setIsMobileMenuOpen(false)}
+              prefetch={true}
             >
               <User className="w-5 h-5" />
               <span>Meu Perfil</span>
             </Link>
             <Link
               href="/investments"
-              className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 rounded-xl transition-colors"
+              className={getMobileLinkClasses("/investments")}
               onClick={() => setIsMobileMenuOpen(false)}
+              prefetch={true}
             >
               <PieChart className="w-5 h-5" />
               <span>Investimentos</span>
             </Link>
             <Link
               href="/carteira"
-              className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 rounded-xl transition-colors"
+              className={getMobileLinkClasses("/carteira")}
               onClick={() => setIsMobileMenuOpen(false)}
+              prefetch={true}
             >
               <Wallet className="w-5 h-5" />
               <span>Carteira</span>

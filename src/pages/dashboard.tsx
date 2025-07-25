@@ -7,7 +7,6 @@ import { MonthlyExpenses } from "@/components/dashboard/MonthlyExpenses";
 import { MonthlyPlanningCard } from "@/components/dashboard/MonthlyPlanningCard";
 import { MonthSidebar } from "@/components/dashboard/MonthSidebar";
 import MonthSelectorMobile from "@/components/dashboard/MonthSidebarMobile";
-import { NotificationCenter } from "@/components/dashboard/NotificationCenter";
 import { Topbar } from "@/components/Topbar";
 import { MonthlyDataProvider } from "@/context/MonthlyDataContext";
 import {
@@ -219,7 +218,7 @@ function DashboardContent() {
       </div>
 
       {/* Notification Center */}
-      <NotificationCenter />
+      {/* <NotificationCenter /> */}
 
       {/* Componente de Debug - Apenas para Desenvolvimento */}
       {/* <AuthDebug /> */}
