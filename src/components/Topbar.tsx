@@ -232,7 +232,7 @@ export function Topbar() {
           <span>Dashboard</span>
         </Link>
         <Link
-          href="/investimentos"
+          href="/investments"
           className="flex items-center gap-2 text-sm font-medium text-neutral-700 hover:text-blue-600 transition-all duration-200 group px-4 py-2.5 rounded-xl hover:bg-blue-50"
         >
           <PieChart className="w-4 h-4 group-hover:scale-110 transition-transform" />
@@ -417,7 +417,7 @@ export function Topbar() {
               <span>Meu Perfil</span>
             </Link>
             <Link
-              href="/investimentos"
+              href="/investments"
               className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 rounded-xl transition-colors"
               onClick={() => setIsMobileMenuOpen(false)}
             >

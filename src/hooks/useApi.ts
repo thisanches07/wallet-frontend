@@ -2,6 +2,7 @@
 import { authService } from "@/services/authService";
 import { useCallback, useMemo } from "react";
 import { useAuth } from "./useAuth";
+import { Investment } from "@/types/investment";
 
 export function useApi() {
   const { logout, user, token } = useAuth();
@@ -275,6 +276,10 @@ export function useApi() {
           method: "PUT",
           body: JSON.stringify(data),
         }),
+
+      // Investimentos
+      getInvestments: () => apiCall<Investment[]>("/api/investments"),
+      syncInvestments: () => apiCall<Investment[]>("/api/investments/sync"),
     }),
     [apiCall]
   );
@@ -342,6 +347,18 @@ export function useReports() {
   return {
     getReports: api.getReports,
   };
+}
+
+export function useInvestments() {
+  const api = useApi();
+
+  return useMemo(
+    () => ({
+      getInvestments: api.getInvestments,
+      syncInvestments: api.syncInvestments,
+    }),
+    [api]
+  );
 }
 
 export function useExport() {
