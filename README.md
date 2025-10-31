@@ -1,4 +1,3 @@
-````markdown
 # Wallet Frontend
 
 Este repositório contém a interface web (frontend) da aplicação Wallet AI — uma dashboard Next.js para gerenciar investimentos, ver recomendações e análise de carteira.
@@ -44,7 +43,6 @@ Observação: a autenticação atual usa um token em `localStorage` com a chave 
 ```cmd
 npm install
 ```
-````
 
 2. Configure variáveis de ambiente (opcional). Por exemplo, crie um arquivo `.env.local` com:
 
@@ -83,30 +81,6 @@ Comandos úteis (se presentes no `package.json`):
 
 - Erros de validação (Zod): se você encontrar mensagens de validação Zod, pode ser que existam endpoints/handlers ainda esperando schemas. No estado atual do projeto, a preferência é usar interfaces TypeScript; alinhe payloads do backend ao contrato definido em `src/types/`.
 
-## Onde alterar/estender
-
-- Para adicionar novos componentes UI: `src/components/`
-- Para adicionar endpoints/logic de fetch: `src/hooks/` e `src/services/`
-- Tipos globais: `src/types/`
-
-## Testes e qualidade
-
-- Este repositório não inclui uma suíte de testes automatizados pronta (por padrão). Se quiser adicionar testes, recomendo Jest + React Testing Library para componentes e MSW para mocks de API.
-
-## Próximos passos e sugestões
-
-- Adicionar documentação mais específica por módulo (ex.: contrato da API de recomendações)
-- Escrever testes de integração para os hooks que usam a API
-- Criar scripts de lint/format se ainda não houver (ESLint, Prettier)
-
-## Contato
-
-Se precisar de ajuda ao rodar localmente, compartilhe o log do console e o payload da resposta da API que está causando erro (por exemplo, a chamada `/api/portfolio/analysis`), e eu te ajudo a diagnosticar.
-
----
-
-Feito com ❤️ para acelerar o desenvolvimento do módulo de investimentos.
 
 ```
 
-```
