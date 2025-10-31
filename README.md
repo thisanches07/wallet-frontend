@@ -81,6 +81,3 @@ Comandos úteis (se presentes no `package.json`):
 
 - Erros de validação (Zod): se você encontrar mensagens de validação Zod, pode ser que existam endpoints/handlers ainda esperando schemas. No estado atual do projeto, a preferência é usar interfaces TypeScript; alinhe payloads do backend ao contrato definido em `src/types/`.
 
-
-```
-
